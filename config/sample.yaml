@@ -1,0 +1,11 @@
+name        : 'TykeBot'
+jabber_id   : 'tykebot@example.com'
+server      : 'example.com'
+password    : 'example'
+master      : 'someone@example.com'
+is_public   : true
+status      : 'Hello, I am TykeBot.  A JabberBot'
+presence    : :chat
+priority    : 10
+room        : 'testing'
+debug       : false

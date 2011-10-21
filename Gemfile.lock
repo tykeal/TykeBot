@@ -1,0 +1,11 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    xmpp4r (0.5)
+
+PLATFORMS
+  java
+  ruby
+
+DEPENDENCIES
+  xmpp4r
