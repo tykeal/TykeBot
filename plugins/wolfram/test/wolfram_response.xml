@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<queryresult success='true'
+    error='false'
+    numpods='5'
+    datatypes='Math'
+    timedout=''
+    timing='0.284'
+    parsetiming='0.07'
+    parsetimedout='false'
+    recalculate=''
+    id='MSP198719he3a8f2gb3bd2b00001c12cb22h30e9cge&amp;s=12'
+    related='http://www1.wolframalpha.com/api/v2/relatedQueries.jsp?id=MSP198819he3a8f2gb3bd2b00005i3h2c16d85ii24f&amp;s=12'
+    version='2.1'>
+ <pod title='Input'
+     scanner='Identity'
+     id='Input'
+     position='100'
+     error='false'
+     numsubpods='1'>
+  <subpod title=''>
+   <plaintext>2+2</plaintext>
+  </subpod>
+ </pod>
+ <pod title='Result'
+     scanner='Identity'
+     id='Result'
+     position='200'
+     error='false'
+     numsubpods='1'
+     primary='true'>
+  <subpod title=''
+      primary='true'>
+   <plaintext>4</plaintext>
+  </subpod>
+ </pod>
+ <pod title='Number name'
+     scanner='Integer'
+     id='NumberName'
+     position='300'
+     error='false'
+     numsubpods='1'>
+  <subpod title=''>
+   <plaintext>four</plaintext>
+  </subpod>
+ </pod>
+ <pod title='Visual representation'
+     scanner='Integer'
+     id='VisualRepresentations'
+     position='400'
+     error='false'
+     numsubpods='1'>
+  <subpod title=''>
+   <plaintext>* * * *</plaintext>
+  </subpod>
+ </pod>
+ <pod title='Number line'
+     scanner='NumberLine'
+     id='NumberLine'
+     position='500'
+     error='false'
+     numsubpods='1'>
+  <subpod title=''>
+   <plaintext></plaintext>
+  </subpod>
+ </pod>
+</queryresult>
