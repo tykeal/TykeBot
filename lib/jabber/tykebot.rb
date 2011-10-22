@@ -231,6 +231,14 @@ module Jabber
       start_listener_thread
     end
 
+    def connected?
+      if jabber.nil?
+        return false
+      else
+        jabber.stream.is_connected?
+      end
+    end
+
     # Join the bot to the room and enable callbacks.
     def join
       nick = @config[:name]

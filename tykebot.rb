@@ -15,6 +15,7 @@ bot = Jabber::TykeBot.new(config)
 
 # Bring your new bot to life
 bot.connect
+# Connect the bot to the MUC
 bot.join
 
 # pull in plugins
@@ -26,13 +27,13 @@ Dir.glob('plugins/*/init.rb').each{|f| require(f)}
 # Should probably do this in a different fashion but this work for now
 while (true)
   # reconnect the bot if we've dropped for some reason
-  if !bot.jabber.stream.is_connected?
+  if !bot.connected?
     sleep(20)
     bot.connect
     bot.join
   end
   # verify we're connected before we try to join the thread
-  if bot.jabber.stream.is_connected?
+  if !bot.connected?
     bot.listener_thread.join(0.15)
   end
 end
