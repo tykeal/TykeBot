@@ -31,5 +31,10 @@ while (true)
     bot.connect
     bot.join
   end
-  bot.listener_thread.join(0.15)
+  # verify we're connected before we try to join the thread
+  if bot.jabber.stream.is_connected?
+    bot.listener_thread.join(0.15)
+  end
 end
+
+# vim:ts=2:sw=2:expandtab:ai
