@@ -51,6 +51,8 @@ module Jabber
     attr_reader :room
     # Direct access to our listener_thread
     attr_reader :listener_thread
+    # Access to our config object
+    attr_reader :config
 
     # Creates a new Jabber::Framework::Bot object with the specified +config+
     # Hash, which must contain +jabber_id+, +password+, and +master+ at a
