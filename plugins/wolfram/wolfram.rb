@@ -4,14 +4,15 @@ require 'cgi'
 require 'rexml/document'
 class WolframApi
 
-#  API_KEY='FILLMEIN'
-  DEFAULT_KEY='FILLMEIN'
-  API_KEY = $bot.config[:wolframkey] || DEFAULT_KEY
-  QUERY_URL="http://api.wolframalpha.com/v2/query?appid=#{API_KEY}&input=%s&format=plaintext"
+  QUERY_URL="http://api.wolframalpha.com/v2/query?appid=%s&input=%s&format=plaintext"
+
+  def initialize(api_key)
+    @api_key = api_key
+  end
 
   # returns array of [title, text] pairs
   def query(s)
-    if "#{API_KEY}" == "#{DEFAULT_KEY}"
+    if @api_key.nil?
       [['ERROR',"Wolfram Alpha key has not been configured.  Please add a wolframkey config option"]]
     else
       parse(do_query(s))
@@ -33,7 +34,7 @@ class WolframApi
 private
 
   def do_query(s)
-    get(QUERY_URL % CGI.escape(s)).body
+    get(QUERY_URL % [@api_key,CGI.escape(s)]).body
   end
 
   def get(uri_str, limit = 10)

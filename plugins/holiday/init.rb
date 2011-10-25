@@ -5,9 +5,9 @@ $bot.add_command(
 	:regex       => /^holiday(\s+.+)?$/,
   :is_public   => true
 ) do |sender, n|
-  now = Time.now
-  holidays = YAML::load(File.open('config/holidays.yaml')).inject({}){|h,e| h[Time.parse(e.first)] = e.last; h}
+  holidays = plugin_load_yaml_config(__FILE__).inject({}){|h,e| h[Time.parse(e.first)] = e.last; h}
 
+  now = Time.now
   count = (n||'1').strip
   message = holidays.size if count == 'all'
   dates = holidays.keys.sort.select{|d| now < d}[0..(count.to_i-1)]

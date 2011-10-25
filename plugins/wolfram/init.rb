@@ -1,4 +1,4 @@
-require 'plugins/wolfram/wolfram.rb'
+plugin_require(__FILE__, 'wolfram.rb')
 
 $bot.add_command(
   :syntax => 'whats <query>',
@@ -7,7 +7,7 @@ $bot.add_command(
 	:is_public   => true
 ) do |sender,query| 
   begin 
-    results = WolframApi.new.query(query)
+    results = WolframApi.new($bot.config[:wolframkey]).query(query)
     if results && results.size > 0
       results.map{|r| r.join(": ")}.join("\n")  
     else

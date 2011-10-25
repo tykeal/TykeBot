@@ -589,13 +589,21 @@ module Jabber
 
               if message.type == :chat
                 parse_thread = Thread.new do
-                  parse_command(sender, message.body)
+                  begin 
+                    parse_command(sender, message.body)
+                  rescue
+                    puts "ERROR: " + $!, $!.backtrace.join("\n")
+                  end
                 end
 
                 parse_thread.join
               elsif message.type == :groupchat
                 parse_thread = Thread.new do
-                  parse_chat_command(message.from, message.to, message.body)
+                  begin 
+                    parse_chat_command(message.from, message.to, message.body)
+                  rescue
+                    puts "ERROR: " + $!, $!.backtrace.join("\n")
+                  end
                 end
 
                 parse_thread.join
