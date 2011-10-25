@@ -3,7 +3,8 @@ $bot.add_command(
 	:syntax      => 'fail',
 	:description => 'Produces a whale',
 	:regex       => /^fail$/,
-	:is_public   => true
+	:is_public   => true,
+  :html => trues
 ) {
 '
  <body>

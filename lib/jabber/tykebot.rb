@@ -260,12 +260,10 @@ module Jabber
 
     # Deliver a message to the specified recipient(s). Accepts a single
     # recipient or an Array of recipients.
-    def deliver(to, message)
-      if to.is_a?(Array)
-        to.each { |t| @jabber.send_message(t, message) }
-      else
-        @jabber.send_message(to, message)
-      end
+    def deliver(to, message,html=false)
+      Array(to).flatten.each { |t| 
+        html ?  @jabber.send_message_xhtml(t, message) : @jabber.send_message(t, message) 
+      }
     end
 
     # Send a message to the room.
@@ -495,7 +493,7 @@ module Jabber
               params = params.pop if params.count < 2
 
               response = command[:callback].call(sender,params)
-              deliver(sender, response) unless response.nil?
+              deliver(sender, response, command[:html]) unless response.nil?
 
               return
             end
