@@ -1,6 +1,6 @@
 
 # private command of 'puts'
-$bot.add_command(
+plugin.add_command(
 	:syntax  => 'puts <string>',
 	:description => 'Write something to $stdout',
 	:regex       => /^puts\s+(.+)$/

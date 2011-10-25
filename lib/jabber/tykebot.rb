@@ -592,7 +592,8 @@ module Jabber
                   begin 
                     parse_command(sender, message.body)
                   rescue
-                    puts "ERROR: " + $!, $!.backtrace.join("\n")
+                    warn("ERROR: " + $!)
+                    warn($!.backtrace.join("\n"))
                   end
                 end
 
@@ -602,7 +603,8 @@ module Jabber
                   begin 
                     parse_chat_command(message.from, message.to, message.body)
                   rescue
-                    puts "ERROR: " + $!, $!.backtrace.join("\n")
+                    warn("ERROR: " + $!)
+                    warn($!.backtrace.join("\n"))
                   end
                 end
 
@@ -632,6 +634,14 @@ module Jabber
         yield queue_item if block_given?
       end
       queue_items
+    end
+   
+    def debug(s)
+      Jabber::debuglog(s)
+    end
+    
+    def warn(s)
+      Jabber::warnlog(s)
     end
   end
 end

@@ -1,4 +1,4 @@
-$bot.add_command(
+plugin.add_command(
   :syntax      => 'lunch [list]',
   :description => 'get a lunch suggestion or list all locations currently known',
   :regex       => /^lunch(\s+list\s*)?$/,
@@ -22,7 +22,7 @@ $bot.add_command(
   message
 end
 
-$bot.add_command(
+plugin.add_command(
   :syntax      => 'add lunch <location>',
   :description => 'add a lunch location to the options',
   :regex       => /^add lunch\s+(.+)?$/,
@@ -44,7 +44,7 @@ $bot.add_command(
   end
 end
 
-$bot.add_command(
+plugin.add_command(
   :syntax      => 'delete lunch [location]',
   :description => 'delete a lunch location from the options',
   :regex       => /^delete lunch\s+(.+)?$/,

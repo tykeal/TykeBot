@@ -1,5 +1,4 @@
-
-$bot.add_command(
+plugin.add_command(
 	:syntax      => 'about',
 	:description => 'About me, the bot!',
 	:regex       => /^about$/,

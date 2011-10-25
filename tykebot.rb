@@ -6,11 +6,12 @@ require 'rubygems'
 require 'jabber/tykebot'
 require 'utils'
 require 'yaml'
+require 'plugin'
 
 env = ARGV[0] || 'test'
 
 # Create a public Jabber::Bot
-config = YAML::load( File.open( 'config/%s.yaml' % env ) ).inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+config = symbolize_keys(YAML::load(File.open( 'config/%s.yaml' % env )))
 bot = Jabber::TykeBot.new(config)
 
 # Bring your new bot to life
@@ -19,9 +20,12 @@ bot.connect
 bot.join
 
 # pull in plugins
-$bot = bot
-Dir.glob('plugins/*.rb').each{|f| require(f)}
-Dir.glob('plugins/*/init.rb').each{|f| require(f)}
+plugins = (config[:plugin_dirs]||['plugins']).map{|dir| Dir.glob(File.join(dir,'*.rb')) + Dir.glob(File.join(dir,'*','init.rb'))}.flatten.compact.uniq.map do |f| 
+  def make_binding(plugin); binding ; end
+  p=Plugin.new(bot,f)
+  eval(open(f){|file|file.read}, make_binding(p))
+  p
+end
 
 # Just wait till our listener exists out.
 # Should probably do this in a different fashion but this work for now

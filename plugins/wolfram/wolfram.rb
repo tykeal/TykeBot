@@ -2,6 +2,7 @@
 require 'net/http'
 require 'cgi'
 require 'rexml/document'
+
 class WolframApi
 
   QUERY_URL="http://api.wolframalpha.com/v2/query?appid=%s&input=%s&format=plaintext"

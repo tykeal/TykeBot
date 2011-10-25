@@ -1,13 +1,13 @@
-plugin_require(__FILE__, 'wolfram.rb')
+plugin.require('wolfram.rb')
 
-$bot.add_command(
+plugin.add_command(
   :syntax => 'whats <query>',
   :description => 'ask wolfram alpha',
 	:regex       => /^whats\s+(.+)$/,
 	:is_public   => true
 ) do |sender,query| 
   begin 
-    results = WolframApi.new($bot.config[:wolframkey]).query(query)
+    results = WolframApi.new(plugin.config[:api_key]).query(query)
     if results && results.size > 0
       results.map{|r| r.join(": ")}.join("\n")  
     else

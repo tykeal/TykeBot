@@ -1,5 +1,5 @@
 
-$bot.add_command(
+plugin.add_command(
 	:syntax      => 'sting',
 	:description => 'Textually perform a percussive sting',
 	:regex       => /^sting$/,

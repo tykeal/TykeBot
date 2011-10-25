@@ -1,5 +1,5 @@
 
-$bot.add_command(
+plugin.add_command(
 	:syntax      => 'fail',
 	:description => 'Produces a whale',
 	:regex       => /^fail$/,

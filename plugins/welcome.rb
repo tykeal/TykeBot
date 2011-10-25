@@ -1,2 +1,2 @@
 # this is annoying, lets skip for now
-#$bot.welcome{ |person| "Hello #{person}!" }
+#plugin.bot.welcome{ |person| "Hello #{person}!" }
