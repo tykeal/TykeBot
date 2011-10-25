@@ -418,7 +418,8 @@ module Jabber
       @commands[:spec] << {
         :regex      => command[:regex],
         :callback   => callback,
-        :is_public  => command[:is_public] || false
+        :is_public  => command[:is_public] || false,
+        :html       => command[:html] || false
       }
     end
 
@@ -493,6 +494,8 @@ module Jabber
               params = params.pop if params.count < 2
 
               response = command[:callback].call(sender,params)
+              debug("COMMAND: #{command.inspect}")
+              debug("HTML: #{command[:html]}")
               deliver(sender, response, command[:html]) unless response.nil?
 
               return

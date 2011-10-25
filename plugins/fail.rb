@@ -1,4 +1,3 @@
-
 plugin.add_command(
 	:syntax      => 'fail',
 	:description => 'Produces a whale',
@@ -6,19 +5,18 @@ plugin.add_command(
 	:is_public   => true,
   :html => true
 ) {
-  html = 	Jabber::XHTML::HTML.new(
 '
       <p style="font-family:Andale Mono">
 
-       \"""/ 
-        | |
-▄██████████████▄▐█▄▄▄▄█▌
-████████████████▌▀▀██▀▀
-████▄████████████▄▄█▌
-▄▄▄▄▄██████████████▀
-
+<br/>       \"""/ 
+<br/>        | |
+<br/>▄██████████████▄▐█▄▄▄▄█▌
+<br/>████████████████▌▀▀██▀▀
+<br/>████▄████████████▄▄█▌
+<br/>▄▄▄▄▄██████████████▀
+<br/>
       </p>
-')
+'
 }
 
 
