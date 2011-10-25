@@ -32,8 +32,7 @@ set (:local_version) { `cat .git/refs/heads/#{branch rescue 'master'}`.strip }
 namespace :deploy do
   [:start, :stop, :restart].each do |t|
     task t do
-      run "/home/#{user}/bin/botservice.sh #{t}"
-#      run "#{current_path}/startup/botservice.sh #{t}"
+      run "#{current_path}/startup/botservice.sh #{t}"
     end
   end
 
