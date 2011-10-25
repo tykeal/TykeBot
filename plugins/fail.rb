@@ -6,19 +6,8 @@ $bot.add_command(
 	:is_public   => true,
   :html => true
 ) {
+  html = 	Jabber::XHTML::HTML.new(
 '
- <body>
-
-       \"""/ 
-        | |
-▄██████████████▄▐█▄▄▄▄█▌
-████████████████▌▀▀██▀▀
-████▄████████████▄▄█▌
-▄▄▄▄▄██████████████▀
-
-</body>
-  <html xmlns="http://jabber.org/protocol/xhtml-im">
-    <body xmlns="http://www.w3.org/1999/xhtml">
       <p style="font-family:Andale Mono">
 
        \"""/ 
@@ -29,11 +18,7 @@ $bot.add_command(
 ▄▄▄▄▄██████████████▀
 
       </p>
-    </body>
-  </html>
-
-        
-'
+')
 }
 
 
