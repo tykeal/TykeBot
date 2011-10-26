@@ -16,7 +16,7 @@ plugin.add_command(
       a=p.add_element('a')
       a.text=t["name"]
       a.add_attribute("href",t["url"])
-      p.add_text(', ') unless i==t.size-1
+      p.add_text(', ') unless i==trends.size-1
     end
     p.to_s
   rescue
