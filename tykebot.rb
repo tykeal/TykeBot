@@ -1,18 +1,16 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.push('lib/')
-
 require 'rubygems'
-require 'jabber/tykebot'
-require 'utils'
 require 'yaml'
-require 'plugin'
+require 'lib/tykebot'
+require 'lib/utils'
+require 'lib/plugin'
 
 env = ARGV[0] || 'test'
 
 # Create a public Jabber::Bot
 config = symbolize_keys(YAML::load(File.open( 'config/%s.yaml' % env )))
-bot = Jabber::TykeBot.new(config)
+bot = TykeBot.new(config)
 
 # Bring your new bot to life
 bot.connect
