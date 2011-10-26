@@ -6,7 +6,7 @@ plugin.add_command(
   :html => true
 ) {
 '
-      <p style="font-family:Andale Mono">
+      <p style="font-family:Andale Mono,Menlo">
 
 <br/>       \"""/ 
 <br/>        | |
