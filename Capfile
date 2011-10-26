@@ -74,6 +74,6 @@ end
 after "deploy", "deploy:cleanup"
 after "deploy:symlink", "rvm:trust_rvmrc", "deploy:restart"
 after "rvm:trust_rvmrc", "deploy:bundleinstall"
-before "deploy:restart", "deploy:template"
+after "deploy:bundleinstall", "deploy:template"
 
 # vim:ts=2:sw=2:expandtab:ft=ruby
