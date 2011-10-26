@@ -275,8 +275,8 @@ require 'lib/tykemuc'
     private
 
     def valid_chat?(message) #:nodoc:
-      message.body && 
-      !message.first_element('delay') && 
+      (message.body && 
+      !message.first_element('delay')) && 
         (message.type == :chat &&
           message.from != @config[:name]) ||
         (message.type == :groupchat &&
