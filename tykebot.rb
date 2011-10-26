@@ -28,7 +28,11 @@ while (true)
   if !bot.connected?
     sleep(20)
     bot.connect
-    bot.join
+    # Don't try to re-join a room if we didn't reconnect
+    # we'll blow up! 
+    if bot.connected
+      bot.join
+    end
   end
   # verify we're connected before we try to join the thread
   if !bot.connected?
