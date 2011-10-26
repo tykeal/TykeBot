@@ -59,6 +59,8 @@ require 'lib/tykemuc'
     attr_reader :config
     # Commands
     attr_reader :commands
+    # plugins
+    attr_reader :plugins
 
     # Creates a new Jabber::Framework::Bot object with the specified +config+
     # Hash, which must contain +jabber_id+, +password+, and +master+ at a
@@ -124,6 +126,38 @@ require 'lib/tykemuc'
       # Default to asking about unknown commands.
       @config[:misunderstood_message] = @config[:misunderstood_message].nil? ? true : @config[:misunderstood_message]
 
+      @plugins={}
+    end
+
+    # Look in the file system in the dirs specified in the config or default to 'plugins/'
+    # supports black listing of plugins by name in config using config[:blacklist_plugins]
+    def discover_plugins
+      plugins={}
+      blacklist=(config[:blacklist_plugins]||[]).map(&:to_s)
+      plugin_dirs=config[:plugin_dirs]||['plugins']
+      debug("auto discovering plugins: dirs: #{plugin_dirs.inspect} blacklist: #{blacklist.inspect}")
+      (config[:plugin_dirs]||['plugins']).map{|dir| Dir.glob(File.join(dir,'*.rb')) + Dir.glob(File.join(dir,'*','init.rb'))}.flatten.compact.uniq.map do |f|
+        p=Plugin.new(self,f)
+        unless blacklist.include?(p.name)
+          plugins[p.name] ||= p
+        end
+      end
+      plugins
+    end
+
+    # Load the plugins found in the passed plugins hash.  This can be populated by
+    # calling discover_plugins.  The current plugin list is replaced by this call.
+    def load_plugins(plugins)
+      @plugins=plugins
+      plugins.each do |name,plugin|
+        def make_binding(plugin); binding ; end
+        begin
+          debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
+          eval(open(plugin.file){|file|file.read}, make_binding(plugin))
+        rescue
+          warn("failed to load plugin: #{$!}")
+        end
+      end
     end
 
     # Connect the bot, making it available to accept commands.
@@ -389,11 +423,12 @@ require 'lib/tykemuc'
       queue_items
     end
    
-    def debug(s)
-      Jabber::debuglog(s)
+    def debug(s,*args)
+      Jabber::debuglog(args.empty? ? s : s % args)
     end
-    
-    def warn(s)
-      Jabber::warnlog(s)
+ 
+    def warn(s,*args)
+      Jabber::warnlog(args.empty? ? s : s % args)
     end
+
   end

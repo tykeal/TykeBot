@@ -17,13 +17,8 @@ bot.connect
 # Connect the bot to the MUC
 bot.join
 
-# pull in plugins
-plugins = (config[:plugin_dirs]||['plugins']).map{|dir| Dir.glob(File.join(dir,'*.rb')) + Dir.glob(File.join(dir,'*','init.rb'))}.flatten.compact.uniq.map do |f| 
-  def make_binding(plugin); binding ; end
-  p=Plugin.new(bot,f)
-  eval(open(f){|file|file.read}, make_binding(p))
-  p
-end
+# load plugins by auto discovery
+bot.load_plugins(bot.discover_plugins)
 
 # Just wait till our listener exists out.
 # Should probably do this in a different fashion but this work for now

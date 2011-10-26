@@ -1,11 +1,12 @@
 class Plugin
-  attr_accessor :bot, :name 
+  attr_reader :bot, :name, :enabled, :file
 
   def initialize(bot,file)
     @bot=bot
+    @file=file
     @dir=File.dirname(file)
     @name=parse_name(file)
-    debug("Loading plugin: %s from: %s",@name,file)
+    @enabled=true
   end
 
   def require(filename)
