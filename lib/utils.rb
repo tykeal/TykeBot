@@ -1,3 +1,10 @@
+require 'net/http'
+require 'net/https'
+require 'cgi'
+
+# for making bindings for the plugins... want in the global scope, so here.
+def make_binding(plugin); binding ; end
+
 def symbolize_keys(hash)
   hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
 end
@@ -18,5 +25,21 @@ def time_diff_in_natural_language(from_time, to_time)
   end
 
   components.join(", ") + (from_time > to_time ? ' ago' : '')
+end
+
+def http_get(uri_str, limit = 10)
+  raise ArgumentError, 'HTTP redirect too deep' if limit == 0
+
+  url = URI.parse(uri_str)
+  http = Net::HTTP.new(url.host, url.port)
+  request = Net::HTTP::Get.new(url.path + (url.query ?  "?" + url.query : ''))
+  response = http.start {|http| http.request(request) }
+
+  case response
+  when Net::HTTPSuccess     then response
+  when Net::HTTPRedirection then fetch(response['location'], limit - 1)
+  else
+    response.error!
+  end
 end
 

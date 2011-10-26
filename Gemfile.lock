@@ -1,6 +1,8 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    json (1.6.1)
+    json (1.6.1-java)
     xmpp4r (0.5)
 
 PLATFORMS
@@ -8,4 +10,5 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  json
   xmpp4r

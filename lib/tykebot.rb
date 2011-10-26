@@ -152,7 +152,6 @@ require 'lib/tykemuc'
       plugins.each do |name,plugin|
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
-          def make_binding(plugin); binding ; end
           eval(open(plugin.file){|file|file.read}, make_binding(plugin))
         rescue
           warn("failed to load plugin: #{$!}")
