@@ -38,7 +38,7 @@ private
     return bot.config[@name.to_sym] if bot.config[@name.to_sym]
  
     # try yaml files in config/ and plugin dir
-    ['config',@dir].each do |d|
+    [bot.config[:config_dir],@dir].each do |d|
       f=File.join(d,"#{@name}.yaml")
       return YAML::load(File.open(f)) if File.exist?(f)
     end

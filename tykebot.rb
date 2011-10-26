@@ -7,10 +7,11 @@ require 'lib/utils'
 require 'lib/plugin'
 
 env = ARGV[0] || 'test'
+config_dir = ARGV[1] || 'config'
 
 # Create a public Jabber::Bot
-config = symbolize_keys(YAML::load(File.open( 'config/%s.yaml' % env )))
-bot = TykeBot.new(config)
+config = symbolize_keys(YAML::load(File.open( '%s/%s.yaml' % [config_dir,env] )))
+bot = TykeBot.new(config.merge(:config_dir=>config_dir))
 
 # Bring your new bot to life
 bot.connect
