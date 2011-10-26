@@ -150,9 +150,9 @@ require 'lib/tykemuc'
     def load_plugins(plugins)
       @plugins=plugins
       plugins.each do |name,plugin|
-        def make_binding(plugin); binding ; end
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
+          def make_binding(plugin); binding ; end
           eval(open(plugin.file){|file|file.read}, make_binding(plugin))
         rescue
           warn("failed to load plugin: #{$!}")
@@ -311,12 +311,12 @@ require 'lib/tykemuc'
     def valid_chat?(message) #:nodoc:
       (message.body && 
       !message.first_element('delay')) && 
-        (message.type == :chat &&
+        ((message.type == :chat &&
           message.from != @config[:name]) ||
         (message.type == :groupchat &&
           message.from.resource &&
           message.from.resource != @config[:name] &&
-          strip_prefix(message.body))
+          strip_prefix(message.body)))
     end
 
     # strip off the :chat_prefix by returning the first group match
