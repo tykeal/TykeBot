@@ -164,18 +164,26 @@ require 'lib/tykemuc'
     # configuration setting.
     def connect
       jid = Jabber::JID.new(@config[:jabber_id])
-      @jabber = Jabber::Framework::Bot.new(jid, @config[:password])
-      @room = TykeMuc.new(@jabber.stream)
+      begin
+        @jabber = Jabber::Framework::Bot.new(jid, @config[:password])
+        # Make sure we're connected before trying to attach a room
+        if connected?
+          @room = TykeMuc.new(@jabber.stream)
 
-      presence(@config[:presence], @config[:status], @config[:priority])
+          presence(@config[:presence], @config[:status], @config[:priority])
 
-      jabber.stream.add_message_callback do |message|
-        receive_message(message) if valid_chat?(message)
+          jabber.stream.add_message_callback do |message|
+            receive_message(message) if valid_chat?(message)
+          end
+
+          #deliver(@config[:master], (@config[:startup_message] || "#{@config[:name]} reporing for duty."))
+
+          start_listener_thread
+        end
+      rescue Exception => e
+        # Do nothing
+        # AKA eat the baby right now
       end
-
-      #deliver(@config[:master], (@config[:startup_message] || "#{@config[:name]} reporing for duty."))
-
-      start_listener_thread
     end
 
     def connected?
@@ -194,12 +202,15 @@ require 'lib/tykemuc'
 
       jid = Jabber::JID.new("#{room}@conference.#{serv}/#{nick}")
 
-      @room.join(jid)
+      # We need a connection or else we'll blow up
+      if connected?
+        @room.join(jid)
 
-      @room.add_message_callback do |message|
-        if valid_chat?(message)
-          message.body = strip_prefix(message.body)
-          receive_message(message) 
+        @room.add_message_callback do |message|
+          if valid_chat?(message)
+            message.body = strip_prefix(message.body)
+            receive_message(message) 
+          end
         end
       end
     end

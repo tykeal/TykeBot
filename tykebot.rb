@@ -28,14 +28,10 @@ while (true)
   if !bot.connected?
     sleep(20)
     bot.connect
-    # Don't try to re-join a room if we didn't reconnect
-    # we'll blow up! 
-    if bot.connected
-      bot.join
-    end
+    bot.join
   end
   # verify we're connected before we try to join the thread
-  if !bot.connected?
+  if bot.connected?
     bot.listener_thread.join(0.15)
   end
 end
