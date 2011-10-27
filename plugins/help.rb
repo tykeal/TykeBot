@@ -10,34 +10,24 @@ plugin.add_command(
   # Returns the default help message describing the bot's command repertoire.
   # Commands are sorted alphabetically by name, and are displayed according
   # to the bot's and the commands's _public_ attribute.
-  command_name = (cmd || '').strip
+  command_name = cmd.to_s.strip
+  master = plugin.bot.master?(sender)
+  commands = plugin.bot.commands(:enabled=>true,:public=>!master)
   if command_name.length == 0
     # Display help for all commands
-    help_message = "I understand the following commands:\n\n"
-
-    plugin.bot.commands[:meta].sort.each do |command|
-      command = command[1]
-
-      if !command[:is_alias] && (command[:is_public] || plugin.bot.master?(sender))
-        command[:syntax].each { |syntax| help_message += "#{syntax}\n" }
-        help_message += "  #{command[:description]}\n\n"
-      end
-    end
+    "I understand the following commands:\n\n" +
+      commands.sort{|a,b| a[:name]<=>b[:name]}.map do |command|
+        master_text="[%s] " % (command[:plugin] ? "#{command[:plugin].name}:plugin":'builtin') if master
+        command[:syntax].join("\n") + "\n  %s%s" % [master_text,command[:description]]
+      end.join("\n\n")
   else
     # Display help for the given command
-    command = plugin.bot.commands[:meta][command_name]
-
-    if command.nil?
-        help_message = "I don't understand '#{command_name}' Try saying" +
-          " 'help' to see what commands I understand."
+    if command = commands.detect{|cmd| cmd[:name]==command_name}
+      command[:syntax].join("\n") + "\n  #{command[:description]}"
     else
-      help_message = ''
-      command[:syntax].each { |syntax| help_message += "#{syntax}\n" }
-      help_message += "  #{command[:description]} "
+       "I don't understand '#{command_name}' Try saying" +
+          " 'help' to see what commands I understand."
     end
   end
-
-  help_message
-
 end
 

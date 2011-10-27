@@ -72,56 +72,30 @@ module Commands
     #  ) { rand(10).to_s }
     #
     def add_command(command, &callback)
-      name = command_name(command[:syntax])
-
-      # Add the command meta - used in the 'help' command response.
-      add_command_meta(name, command)
-
-      # Add the command spec - used for parsing incoming commands.
-      add_command_spec(command, callback)
-
-      # Add any command aliases to the command meta and spec
-      unless command[:alias].nil?
-        command[:alias].each { |a| add_command_alias(name, a, callback) }
+      [:regex,:syntax].each do |key|
+        raise ArgumentError, "#{key} is required" unless command[key]
       end
+      command[:name] ||= command_name(command[:syntax])
+      command[:regex] = Array(command[:regex])
+      command[:syntax] = Array(command[:syntax])
+      command[:callback] = callback
+      command[:enabled] = true if command[:enabled].nil?
+      # copy in alias info
+      Array(command[:alias]).each { |a| command[:regex] << a[:regex]; command[:syntax] << a[:syntax] }  
+      @commands << command
+      command
+    end
+
+    # can set :enabled=>true and/or :public=>true to filter the commands
+    # NOTE: this returns a new object, so can't add commands via this
+    # have to use add_command.
+    def commands(options={})
+      @commands.
+        reject{|c| options[:enabled] && !c[:enabled]}.
+        reject{|c| options[:public] && !c[:is_public]}
     end
 
   private
-
-    # Add a command alias for the given original +command_name+
-    def add_command_alias(command_name, alias_command, callback) #:nodoc:
-      original_command = @commands[:meta][command_name]
-      original_command[:syntax] << alias_command[:syntax]
-
-      alias_name = command_name(alias_command[:syntax])
-
-      alias_command[:is_public] = original_command[:is_public]
-
-      add_command_meta(alias_name, original_command, true)
-      add_command_spec(alias_command, callback)
-    end 
-
-    # Add a command meta
-    def add_command_meta(name, command, is_alias=false) #:nodoc:
-      syntax = command[:syntax]
-
-      @commands[:meta][name] = {
-        :syntax       => syntax.is_a?(Array) ? syntax : [syntax],
-        :description  => command[:description],
-        :is_public    => command[:is_public] || false,
-        :is_alias     => is_alias
-      }
-    end
-
-    # Add a command spec
-    def add_command_spec(command, callback) #:nodoc:
-      @commands[:spec] << {
-        :regex      => command[:regex],
-        :callback   => callback,
-        :is_public  => command[:is_public] || false,
-        :html       => command[:html] || false
-      }
-    end
 
     # Extract the command name from the given syntax
     def command_name(syntax) #:nodoc:

@@ -1,5 +1,9 @@
+# create namespace
+module Plugins ; end
+
+# todo: maybe move into namespace?
 class Plugin
-  attr_reader :bot, :name, :enabled, :file
+  attr_reader :bot, :name, :enabled, :file, :commands
 
   def initialize(bot,file)
     @bot=bot
@@ -7,11 +11,25 @@ class Plugin
     @dir=File.dirname(file)
     @name=parse_name(file)
     @enabled=true
+    @commands = []
   end
 
   def require(filename)
-#    debug("REQUIRE: " + File.join(@dir,filename))
-   Kernel.require(File.join(@dir,filename))
+    Kernel.require(File.join(@dir,filename))
+  end
+
+  def data_file(filename)
+    # todo isolate plugins in their own dir
+    filename ||= "#{name}.yaml"
+    File.join(bot.config[:data_dir] || 'data',filename)
+  end
+
+  def data_save_yaml(data,filename=nil)
+    open(data_file(filename),"w"){|f| f.puts YAML::dump(data)}
+  end
+
+  def data_load_yaml(filename=nil)
+    YAML.load(File.open(data_file(filename))) if File.exist?(data_file(filename))
   end
 
   def config
@@ -20,7 +38,20 @@ class Plugin
   end
 
   def add_command(options,&block)
-    bot.add_command(options,&block)
+    @commands << bot.add_command({:plugin=>self}.merge(options),&block)
+  end
+
+  def add_init(&block)
+    bot.add_plugin_init(self,&block)
+  end
+
+  def disable
+    enable(false)
+  end
+
+  def enable(enabled=true)
+    @commands.each{|c| c[:enabled]=enabled}
+    @enabled=enabled
   end
 
   def debug(s,*args)

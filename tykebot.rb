@@ -19,7 +19,7 @@ bot.connect
 bot.join
 
 # load plugins by auto discovery
-bot.load_plugins(bot.discover_plugins)
+bot.discover_load_and_init_plugins
 
 # Just wait till our listener exists out.
 # Should probably do this in a different fashion but this work for now

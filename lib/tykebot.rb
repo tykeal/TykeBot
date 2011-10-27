@@ -57,8 +57,6 @@ require 'lib/tykemuc'
     attr_reader :listener_thread
     # Access to our config object
     attr_reader :config
-    # Commands
-    attr_reader :commands
     # plugins
     attr_reader :plugins
 
@@ -121,12 +119,18 @@ require 'lib/tykemuc'
 
       Jabber.debug = @config[:debug] || false
 
-      @commands = { :spec => [], :meta => {} }
-
       # Default to asking about unknown commands.
       @config[:misunderstood_message] = @config[:misunderstood_message].nil? ? true : @config[:misunderstood_message]
 
-      @plugins={}
+      @plugins=[]
+      @commands = []
+      @inits=[]
+    end
+
+    # all-in-one helper for default behaviour
+    def discover_load_and_init_plugins
+      load_plugins(discover_plugins)
+      init_plugins
     end
 
     # Look in the file system in the dirs specified in the config or default to 'plugins/'
@@ -142,19 +146,37 @@ require 'lib/tykemuc'
           plugins[p.name] ||= p
         end
       end
-      plugins
+      plugins.values
     end
 
-    # Load the plugins found in the passed plugins hash.  This can be populated by
-    # calling discover_plugins.  The current plugin list is replaced by this call.
+    # Load the array of plugins passed.  This can be populated by calling discover_plugins.
     def load_plugins(plugins)
-      @plugins=plugins
-      plugins.each do |name,plugin|
+      @plugins += plugins
+      plugins.each do |plugin|
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
           eval(open(plugin.file){|file|file.read}, make_binding(plugin))
         rescue
           warn("failed to load plugin: #{$!}")
+        end
+      end
+    end
+
+    # a one time callback after plugins are loaded and bot is connected/ready
+    def add_plugin_init(plugin,&block)
+      debug("adding plugin %s to init list",plugin.name)
+      @inits << [plugin,block]
+    end
+
+    # call after loading plugins
+    def init_plugins
+      @inits.each do |plugin,callback|
+        begin
+          debug("initializing plugin #{plugin.name}")
+          callback.call(plugin)
+        rescue
+          warn("error initing plugin: #{plugin.name} %s %s",$!,$!.backtrace.join("\n"))
+          raise "BULLSHIT"
         end
       end
     end
@@ -338,9 +360,9 @@ require 'lib/tykemuc'
     # generate response to the message with either a command response, a help msg
     # or nothing...
     def respond(sender,body)
-      if cmd=match_command(sender,body)
-        debug("COMMAND: #{cmd.inspect}")
-        [cmd[:callback].call(sender, *(body.match(cmd[:regex]).captures)),cmd[:html]]
+      cmd,match = match_command(commands(:enabled=>true,:public=>!master?(sender)),body)
+      if cmd
+        [cmd[:callback].call(sender, *match.captures),cmd[:html]]
       else
         if @config[:misunderstood_message] && @config[:give_help]
           ["I don't understand '#{body}' Try saying 'help' " +
@@ -349,10 +371,16 @@ require 'lib/tykemuc'
       end 
     end
 
-    # check for a matching command out of the eligble set determined by sender
-    def match_command(sender,body)
-      (master?(sender) ? @commands[:spec] : @commands[:spec].select{|c| c[:is_public]}).
-        detect {|command| body.match(command[:regex])}
+    # return [command,match] if a command regex matches
+    def match_command(commands,body)
+      commands.each do |command| 
+        command[:regex].each do |re| 
+          if match = body.match(re);
+            return [command,match] 
+          end
+        end
+      end
+      nil
     end
 
     # Creates a new Thread dedicated to listening for incoming chat messages.
