@@ -155,9 +155,9 @@ require 'lib/tykemuc'
       plugins.each do |plugin|
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
-          eval(open(plugin.file){|file|file.read}, make_binding(plugin))
+          eval(open(plugin.file){|file|file.read}, make_binding(plugin), plugin.file, 1)
         rescue
-          warn("failed to load plugin: #{$!}")
+          warn("failed to load plugin: %s %s",$!,$!.backtrace.join("\n"))
         end
       end
     end
@@ -175,8 +175,7 @@ require 'lib/tykemuc'
           debug("initializing plugin #{plugin.name}")
           callback.call(plugin)
         rescue
-          warn("error initing plugin: #{plugin.name} %s %s",$!,$!.backtrace.join("\n"))
-          raise "BULLSHIT"
+          warn("failed initialing plugin: #{plugin.name} %s %s",$!,$!.backtrace.join("\n"))
         end
       end
     end
