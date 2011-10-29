@@ -2,7 +2,6 @@ require 'net/http'
 require 'net/https'
 require 'cgi'
 
-
 def symbolize_keys(hash)
   hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
 end
@@ -41,3 +40,6 @@ def http_get(uri_str, limit = 10)
   end
 end
 
+class Array
+  def sample ; self[rand(size)] ; end
+end

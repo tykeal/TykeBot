@@ -9,7 +9,7 @@ command(:hot,
     p=REXML::Element.new('p')
     p.add_text("Here's what the kids are twatting about: ")
     trends=TwitterApi.new(plugin.config[:woeid]).hot.reject{|t| t["promoted_content"]}
-    tweet = TwitterApi.new.search(trends[rand(trends.size)]["name"],1).first
+    tweet = TwitterApi.new.search(trends.sample["name"],1).first
     if tweet
       p.add_text("@")
       p.add_text(tweet["from_user"])
