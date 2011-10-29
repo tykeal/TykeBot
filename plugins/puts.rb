@@ -1,9 +1,7 @@
-
-# private command of 'puts'
-plugin.add_command(
-	:syntax  => 'puts <string>',
+command(:puts,
+  :required=>:string,
 	:description => 'Write something to $stdout',
-	:regex       => /^puts\s+(.+)$/
+  :is_public   =>  false
 ) do |sender, message|
 	puts "#{sender} says '#{message}'"
 	"'#{message}' written to $stdout"

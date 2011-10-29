@@ -1,10 +1,7 @@
-
-# only a master may tell the bot to shutdown
-plugin.add_command(
-	:syntax => 'shutdown',
+# only master can shutdown
+command(:shutdown,
 	:description => 'Shut down Bot',
-	:is_public   => false,
-	:regex       => /^shutdown$/
+	:is_public   => false
 ) do |from, msg|
 	puts "#{from} shut down the bot"
 	plugin.bot.disconnect

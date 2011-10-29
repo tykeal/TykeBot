@@ -1,8 +1,6 @@
-plugin.add_command(
-  :syntax      => 'lunch [list]',
-  :description => 'get a lunch suggestion or list all locations currently known',
-  :regex       => /^lunch(\s+list\s*)?$/,
-  :is_public   => true
+command(:lunch,
+  :optional=>:list,
+  :description => 'get a lunch suggestion or list all locations currently known'
 ) do |sender, list|
   lunchdata = 'data/lunch.yaml'
   locations = []
@@ -22,11 +20,9 @@ plugin.add_command(
   message
 end
 
-plugin.add_command(
-  :syntax      => 'add lunch <location>',
-  :description => 'add a lunch location to the options',
-  :regex       => /^add lunch\s+(.+)?$/,
-  :is_public   => true
+command('add lunch',
+  :required=>:location,
+  :description => 'add a lunch location to the options'
 ) do |sender, location|
   lunchdata = 'data/lunch.yaml'
   locations = []
@@ -44,12 +40,10 @@ plugin.add_command(
   end
 end
 
-plugin.add_command(
-  :syntax      => 'delete lunch [location]',
-  :description => 'delete a lunch location from the options',
-  :regex       => /^delete lunch\s+(.+)?$/,
-  :alias       => [ :syntax => 'del lunch [location]', :regex => /^del lunch\s+(.+)?$/ ],
-  :is_public   => true
+command('delete lunch',
+  :required=>:location,
+  :alias=>'del lunch',
+  :description => 'delete a lunch location from the options'
 ) do |sender, location|
   lunchdata = 'data/lunch.yaml'
   locations = []

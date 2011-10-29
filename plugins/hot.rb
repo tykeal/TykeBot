@@ -1,11 +1,8 @@
 require 'json'
 require 'rexml/document'
 
-plugin.add_command(
-	:syntax      => 'hot',
+command(:hot,
 	:description => 'Show trending topics on twitter',
-	:regex       => /^hot$/,
-	:is_public   => true,
   :html        => true
 ) do |sender|
   begin

@@ -1,10 +1,8 @@
 plugin.require('wolfram.rb')
 
-plugin.add_command(
-  :syntax => 'whats <query>',
-  :description => 'ask wolfram alpha',
-	:regex       => /^whats\s+(.+)$/,
-	:is_public   => true
+command(:whats,
+  :required    => :query,
+  :description => 'ask wolfram alpha'
 ) do |sender,query| 
   begin 
     results = WolframApi.new(plugin.config[:api_key]).query(query)

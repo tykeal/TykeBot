@@ -1,10 +1,4 @@
-plugin.add_command(
-	:syntax      => 'fail',
-	:description => 'Produces a whale',
-	:regex       => /^fail$/,
-	:is_public   => true,
-  :html => true
-) {
+command(:fail,:description => 'Produces a whale', :html=>true) {
 '
       <p style="font-family:Andale Mono,Menlo">
 

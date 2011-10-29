@@ -1,10 +1,7 @@
-plugin.add_command(
-  :syntax       => 'help [<command>]',
-  :description  => 'Display help for the given command, or all commands' +
-      ' if no command is specified',
-  :regex        => /^help(\s+.+?)?$/,
-  :alias        => [ :syntax => '? [<command>]', :regex => /^\?(\s+.+?)?$/ ],
-  :is_public    => plugin.bot.config[:is_public]
+command(:help, 
+  :description=>'Display help for the given command, or all commands if no command is specified',
+  :alias=>'?',
+  :optional=>:command
 ) do |sender, cmd|
 
   # Returns the default help message describing the bot's command repertoire.

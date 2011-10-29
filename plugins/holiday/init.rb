@@ -1,9 +1,7 @@
 require 'time'
-plugin.add_command(
-	:syntax  => 'holiday <n>',
-	:description => 'get the next n holidays, n defaults to 1.  n can also be all. ex: holiday, holiday all, holiday 3',
-	:regex       => /^holiday(\s+.+)?$/,
-  :is_public   => true
+command(:holiday,
+  :optional=>:n,
+	:description => 'get the next n holidays, n defaults to 1.  n can also be all. ex: holiday, holiday all, holiday 3'
 ) do |sender, n|
   holidays = plugin.config[:dates].inject({}){|h,e| h[Time.parse(e.first)] = e.last; h}
 

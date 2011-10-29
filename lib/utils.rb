@@ -2,8 +2,6 @@ require 'net/http'
 require 'net/https'
 require 'cgi'
 
-# for making bindings for the plugins... want in the global scope, so here.
-def make_binding(plugin); binding ; end
 
 def symbolize_keys(hash)
   hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}

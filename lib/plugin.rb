@@ -1,5 +1,53 @@
-# create namespace
-module Plugins ; end
+def make_binding(plugin)
+  @plugin=plugin
+  binding
+end
+
+# create main object mixin for plugin DSL
+module Plugins
+  #
+  # :description=>string        #
+  # :alias=>[]                  # of strings
+  # :is_public, :html, :enable  # bool flags
+  #
+  def command(name,options={},&block)
+    cmd={}
+    ([name] + Array(options[:alias])).each do |name|
+      (cmd[:regex]||=[]) << command_regex(name,options[:required],options[:optional])
+      (cmd[:syntax]||=[]) << command_syntax(name,options[:required],options[:optional])
+    end
+    cmd[:description] = options[:description]
+    cmd[:is_public] = options.has_key?(:is_public) ? options[:is_public] : true
+    cmd[:html] = options[:html]
+    cmd[:enabled] = options.has_key?(:enabled) ? options[:enabled] : true
+    @plugin.add_command(cmd,&block)
+  end
+
+  def init(&block)
+    @plugin.add_init(&block) 
+  end
+
+private
+  def command_regex(name,required,optional)
+    Regexp.compile("^%s%s%s$" % [
+      Regexp.quote(name.to_s),
+      Array(required).map{"(\s+.+?)"}.join,
+      Array(optional).map{"(\s+.+?)?"}.join
+    ])
+  end
+
+  def command_syntax(name,required,optional)
+    s="#{name}" 
+    s+=' ' + Array(required).map{|n|"<#{n}>"}.join(" ") if required
+    s+=' ' + Array(optional).map{|n|"[<#{n}>]"}.join(" ") if optional
+    s
+  end
+  
+end
+
+# bring into main namespace
+include Plugins
+
 
 # todo: maybe move into namespace?
 class Plugin
