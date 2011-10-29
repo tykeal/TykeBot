@@ -30,7 +30,7 @@ command(:plugin,
     if p = plugins.detect{|p| p.name==plugin_name}
       case action.to_s.strip.downcase
       when "enable", "disable"
-        p.enable(action=="enable")
+        p.enable(action.to_s.strip.downcase=="enable")
         save(plugin)
         "plugin #{p.name} #{action}d."
       when ''
