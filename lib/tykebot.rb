@@ -42,13 +42,10 @@ require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
-require 'lib/commands'
+require 'lib/command'
 require 'lib/tykemuc'
 
   class TykeBot
-    # mixin command functions
-    include Commands
-
     # Direct access to the Jabber::Framework::Bot
     attr_reader :jabber
     # Direct access to the Jabber::MUC::SimpleMUCClient
@@ -197,8 +194,6 @@ require 'lib/tykemuc'
             receive_message(message) if valid_chat?(message)
           end
 
-          #deliver(@config[:master], (@config[:startup_message] || "#{@config[:name]} reporing for duty."))
-
           start_listener_thread
         end
       rescue Exception => e
@@ -236,26 +231,6 @@ require 'lib/tykemuc'
       end
     end
 
-    # Deliver a message to the specified recipient(s). Accepts a single
-    # recipient or an Array of recipients.
-    def deliver(to, message,html=false)
-      return unless message
-      Array(to).flatten.each { |t| 
-        html ?  @jabber.send_message_xhtml(t, message) : @jabber.send_message(t, message) 
-      }
-    end
-
-    # Send a message to the room.
-    # this still has some problems in regards to xhtml
-    def send(message,html=false)
-      return unless message
-      if message.is_a? Jabber::Message
-        @room.say(message.body)
-      else
-        html ?  @room.say_xhtml(message) : @room.say(message)
-      end
-    end
-
     # Customize a welcome message for new connected people.
     # The given callback takes a |user| parameter and
     # should return the welcome message.
@@ -264,7 +239,7 @@ require 'lib/tykemuc'
     def welcome(&callback)
       @room.add_join_callback do |message|
         response = callback.call(message.from.resource)
-        send(response) unless response.nil?
+        send(:text=>response) unless response.nil?
       end
     end
 
@@ -276,7 +251,7 @@ require 'lib/tykemuc'
     def leave(&callback)
       @room.add_leave_callback do |message|
         response = callback.call(message.from.resource)
-        send(response) unless response.nil?
+        send(:text=>response) unless response.nil?
       end
     end
 
@@ -284,19 +259,40 @@ require 'lib/tykemuc'
     # to restart it by issuing a command.
     def disconnect
       if @jabber.stream.is_connected?
-        deliver(@config[:master], "#{@config[:name]} disconnecting...")
+        send(:to=>@config[:master], :text=>"#{@config[:name]} disconnecting...")
         @jabber.stream.close
       end
     end
 
     # Returns an Array of masters
     def master
-      @config[:master]
+      Array(@config[:master])
     end
 
-    # Returns +true+ if the given Jabber id is a master, +false+ otherwise.
-    def master?(jabber_id)
-      @config[:master].include? jabber_id.to_s.sub(/\/.+$/, '')
+    # Returns +true+ if the message/jabber-id is from a master +false+ otherwise.
+    def master?(message)
+      sender = case message
+      when Jabber::Message
+        sender(message)
+      when String
+        message
+      end
+      master.include?(sender)
+    end
+
+    def groupchat?(message)
+      message.type==:groupchat
+    end
+
+    # Returns the jabber-id of the sender
+    # TODO: fix for :groupchat messages.
+    def sender(message)
+      if groupchat?(message)
+        # this is broken.
+        message.from.resource.to_s
+      else
+        message.from.to_s.sub(/\/.+$/, '')
+      end
     end
 
     # Sets the bot presence, status message and priority.
@@ -337,16 +333,47 @@ require 'lib/tykemuc'
       presence(@config[:presence], status, @config[:priority])
     end
 
+    # send text or xhtml to the room or jabber-id
+    #
+    # :text=>nil | string
+    # :xhtml=>nil | xhtml-string
+    # :to=>nil | jabber-id | [jabber-id]
+    #
+    # requires :text or :xhtml
+    # if :to is nil, this will send to the room
+    def send(options)
+      text = options[:text]
+      xhtml = options[:xhtml]
+      to = options[:to]
+      return unless text || xhtml
+      if to
+        Array(to).flatten.each { |t| 
+          xhtml ?  @jabber.send_message_xhtml(t, xhtml, text) : @jabber.send_message(t, text) 
+        }
+      else
+        xhtml ?  @room.say_xhtml(xhtml,text) : @room.say(text)
+      end
+    end
+
+    # NOTE: this returns a new object, so can't add commands via this
+    # have to use add_command.
+    def commands(public_only=true)
+      @commands.select(&:enabled).reject{|c| public_only && !c.public?}
+    end
+
+    def add_command(command)
+      @commands << command
+    end
+
     private
 
     def valid_chat?(message) #:nodoc:
       (message.body && 
       !message.first_element('delay')) && 
         ((message.type == :chat &&
-          message.from != @config[:name]) ||
+          sender(message) != @config[:name]) ||
         (message.type == :groupchat &&
-          message.from.resource &&
-          message.from.resource != @config[:name] &&
+          sender(message) != @config[:name] &&
           strip_prefix(message.body)))
     end
 
@@ -354,32 +381,6 @@ require 'lib/tykemuc'
     def strip_prefix(body)
       return unless p=body.to_s.strip.match(@config[:chat_prefix])
       p[1]
-    end
-
-    # generate response to the message with either a command response, a help msg
-    # or nothing...
-    def respond(sender,body)
-      cmd,match = match_command(commands(:enabled=>true,:public=>!master?(sender)),body)
-      if cmd
-        [cmd[:callback].call(sender, *match.captures),cmd[:html]]
-      else
-        if @config[:misunderstood_message] && @config[:give_help]
-          ["I don't understand '#{body}' Try saying 'help' " +
-               "to see what commands I understand.", false]
-        end
-      end 
-    end
-
-    # return [command,match] if a command regex matches
-    def match_command(commands,body)
-      commands.each do |command| 
-        command[:regex].each do |re| 
-          if match = body.match(re);
-            return [command,match] 
-          end
-        end
-      end
-      nil
     end
 
     # Creates a new Thread dedicated to listening for incoming chat messages.
@@ -395,20 +396,14 @@ require 'lib/tykemuc'
         loop do
           if received_messages?
             received_messages do |message|
-              body = message.body 
-              next unless @config[:is_public] || master?(sender)
-              begin 
-                case message.type
-                when :chat
-                  sender = message.from.to_s.sub(/\/.+$/, '')
-                  deliver(sender,*respond(sender,body)) 
-                when :groupchat
-                  sender = message.from.resource
-                  send(*respond(sender,body)) 
+              from_master = master?(message)
+              next unless @config[:is_public] || from_master
+              commands(!from_master).each do |cmd| 
+                begin
+                  cmd.message(self,message)
+                rescue
+                  warn("ERROR: %s %s",$!,$!.backtrace.join("\n"))
                 end
-              rescue
-                warn("ERROR: " + $!)
-                warn($!.backtrace.join("\n"))
               end
             end
           end

@@ -41,3 +41,18 @@ If you have multiple files for your plugin, you can create a directory in plugin
 #   post :resource-type/[:id]/:action :params
 #
 
+# list
+*<resource>
+# get
+<resource> <id> 
+# add/update
++<resource> <id> [<data>]
+# remove
+-<resource> <id>
+
+# lunch Scary-yaki
+# *lunch [<filter>]
+# +lunch Scary-yaki
+# -lunch Scary-yaki
+
+

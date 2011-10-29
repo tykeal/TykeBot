@@ -6,4 +6,3 @@ command(:puts,
 	puts "#{sender} says '#{message}'"
 	"'#{message}' written to $stdout"
 end
-

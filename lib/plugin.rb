@@ -86,7 +86,9 @@ class Plugin
   end
 
   def add_command(options,&block)
-    @commands << bot.add_command({:plugin=>self}.merge(options),&block)
+    command = Command.new({:plugin=>self}.merge(options),&block)
+    @commands << command
+    bot.add_command(command)
   end
 
   def add_init(&block)
@@ -98,7 +100,7 @@ class Plugin
   end
 
   def enable(enabled=true)
-    @commands.each{|c| c[:enabled]=enabled}
+    @commands.each{|c| c.enabled=enabled}
     @enabled=enabled
   end
 

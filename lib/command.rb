@@ -1,8 +1,7 @@
-# mixin for dealing with commands
-module Commands
+class Command
+  attr_reader :name, :plugin, :syntax, :description
+  attr_accessor :enabled 
 
-    # Add a command to the bot's repertoire.
-    #
     # Commands consist of a metadata Hash and a callback block. The metadata
     # Hash *must* contain the command +syntax+, a +description+ for display with
     # the builtin 'help' command, and a regular expression (+regex+) to detect
@@ -38,7 +37,7 @@ module Commands
     #
     #   # Say 'puts foo' or 'p foo' and 'foo' will be written to $stdout.
     #   # The bot will also respond with "'foo' written to $stdout."
-    #   add_command(
+    #   Command.new(
     #     :syntax      => 'puts <string>',
     #     :description => 'Write something to $stdout',
     #     :regex       => /^puts\s+(.+)$/,
@@ -50,7 +49,7 @@ module Commands
     #
     #   # 'puts!' is a non-responding version of 'puts', and has two aliases,
     #   # 'p!' and '!'
-    #   add_command(
+    #   Command.new(
     #     :syntax      => 'puts! <string>',
     #     :description => 'Write something to $stdout (without response)',
     #     :regex       => /^puts!\s+(.+)$/,
@@ -64,36 +63,49 @@ module Commands
     #   end
     #
     #  # 'rand' is a public command that produces a random number from 0 to 10
-    #  add_command(
+    #  Command.new(
     #   :syntax      => 'rand',
     #   :description => 'Produce a random number from 0 to 10',
     #   :regex       => /^rand$/,
     #   :is_public   => true
     #  ) { rand(10).to_s }
     #
-    def add_command(command, &callback)
-      [:regex,:syntax].each do |key|
-        raise ArgumentError, "#{key} is required" unless command[key]
-      end
-      command[:name] ||= command_name(command[:syntax])
-      command[:regex] = Array(command[:regex])
-      command[:syntax] = Array(command[:syntax])
-      command[:callback] = callback
-      command[:enabled] = true if command[:enabled].nil?
-      # copy in alias info
-      Array(command[:alias]).each { |a| command[:regex] << a[:regex]; command[:syntax] << a[:syntax] }  
-      @commands << command
-      command
+  def initialize(options,&callback)
+    [:regex,:syntax].each do |key|
+      raise ArgumentError, "#{key} is required" unless options[key]
     end
+    @syntax = Array(options[:syntax])
+    @name = options[:name] || command_name(@syntax.first)
+    @regex = Array(options[:regex])
+    # aliases
+    Array(options[:alias]).each do |a| 
+      @regex << a[:regex] 
+      @syntax << a[:syntax]
+    end
+    @is_public = options.has_key?(:is_public) ? options[:is_public] : true
+    @html = options[:html]
+    @enabled = options.has_key?(:enabled) ? options[:enabled] : true
+    @plugin = options[:plugin]
+    @callback = callback
+  end
 
-    # can set :enabled=>true and/or :public=>true to filter the commands
-    # NOTE: this returns a new object, so can't add commands via this
-    # have to use add_command.
-    def commands(options={})
-      @commands.
-        reject{|c| options[:enabled] && !c[:enabled]}.
-        reject{|c| options[:public] && !c[:is_public]}
+  def public? ; @is_public ; end
+  def enabled? ; @enabled ; end
+
+  def message(bot,message)
+    if m = @regex.map{|r| message.body.match(r)}.compact.first
+      sender = bot.sender(message)
+      if response = @callback.call(sender,*m.captures) 
+        to = sender unless bot.groupchat?(message)
+        type = @html ? :xhtml : :text
+        bot.send(type=>response,:to=>to)
+      end
     end
+  end
+
+  def <=>(other)
+    self.name <=> other.name
+  end
 
   private
 

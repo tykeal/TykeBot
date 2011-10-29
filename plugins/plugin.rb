@@ -13,7 +13,7 @@ command(:plugin,
     "%s%s\n    commands=[%s] src=%s" % [
       p.name,
       p.enabled==true ? '' : ' [DISABLED]',
-      p.commands.map{|c| c[:name]}.join(", "),
+      p.commands.sort.map{|c| "#{c.name}:#{c.public? ? 'public' : 'private'}"}.join(", "),
       p.file,
     ]
   end
