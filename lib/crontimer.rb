@@ -46,10 +46,7 @@ private
         if !@timer.empty?
           curtime = (Time.now)
           if @timer.has_key?(curtime.to_i)
-            operations = @timer[curtime.to_i].sort do |a,b|
-              a[0] <=> b[0]
-            end
-            operations.each do |requestor, callback|
+            @timer[curtime.to_i].each do |requestor, callback|
               callback.call()
             end
             delete_timer(:timestamp=>curtime)
