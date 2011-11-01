@@ -54,7 +54,7 @@ private
         end
 
         # wait a tick before we do anymore work
-        sleep .1
+        sleep 0.1
       end
     end
   end
