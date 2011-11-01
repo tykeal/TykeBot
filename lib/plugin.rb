@@ -16,6 +16,7 @@ module Plugins
       (cmd[:regex]||=[]) << command_regex(name,options[:required],options[:optional])
       (cmd[:syntax]||=[]) << command_syntax(name,options[:required],options[:optional])
     end
+    cmd[:name] = name.to_s
     cmd[:description] = options[:description]
     cmd[:is_public] = options.has_key?(:is_public) ? options[:is_public] : true
     cmd[:html] = options[:html]
@@ -25,6 +26,10 @@ module Plugins
 
   def init(&block)
     @plugin.add_init(&block) 
+  end
+
+  def subscribe(name,&block)
+    @plugin.subscribe(name,&block)
   end
 
 private
@@ -110,6 +115,14 @@ class Plugin
 
   def warn(s,*args)
    Jabber::warnlog(args.empty? ? s : s % args)
+  end
+
+  def publish(name,*args)
+    bot.publish(name,*args)
+  end
+
+  def subscribe(name,&callback)
+    bot.subscribe(name,&callback)
   end
 
 private

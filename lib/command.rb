@@ -1,6 +1,6 @@
 class Command
   attr_reader :name, :plugin, :syntax, :description
-  attr_accessor :enabled 
+  attr_accessor :enabled
 
     # Commands consist of a metadata Hash and a callback block. The metadata
     # Hash *must* contain the command +syntax+, a +description+ for display with
@@ -87,6 +87,7 @@ class Command
     @enabled = options.has_key?(:enabled) ? options[:enabled] : true
     @plugin = options[:plugin]
     @callback = callback
+    @description = options[:description] 
   end
 
   def public? ; @is_public ; end
@@ -95,6 +96,7 @@ class Command
   def message(bot,message)
     if m = @regex.map{|r| message.body.match(r)}.compact.first
       sender = bot.sender(message)
+      bot.publish(:command_match,self,sender,message,m.captures)
       if response = @callback.call(sender,*m.captures) 
         to = sender unless bot.groupchat?(message)
         type = @html ? :xhtml : :text

@@ -44,8 +44,10 @@ require 'xmpp4r/muc'
 require 'lib/command'
 require 'lib/tykemuc'
 require 'lib/crontimer'
+require 'lib/pubsub'
 
   class TykeBot
+    include PubSub
     # Direct access to the Jabber::Framework::Bot
     attr_reader :jabber
     # Direct access to the Jabber::MUC::SimpleMUCClient
