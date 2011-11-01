@@ -5,7 +5,7 @@ module PubSub
       begin 
         callback.call(*params)
       rescue 
-        warn("error in callback for %s: %s %s",name,$!,$!.backtrace.join("\n"))
+        error("error in callback for %s:",name,$!)
       end
     end
   end

@@ -46,7 +46,7 @@ require 'lib/tykemuc'
 require 'lib/crontimer'
 require 'lib/pubsub'
 
-  class TykeBot
+class TykeBot
     include PubSub
     # Direct access to the Jabber::Framework::Bot
     attr_reader :jabber
@@ -153,13 +153,14 @@ require 'lib/pubsub'
 
     # Load the array of plugins passed.  This can be populated by calling discover_plugins.
     def load_plugins(plugins)
-      @plugins += plugins
       plugins.each do |plugin|
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
-          eval(open(plugin.file){|file|file.read}, make_binding(plugin), plugin.file, 1)
+          plugin.load
+          @plugins << plugin
         rescue
-          warn("failed to load plugin: %s %s",$!,$!.backtrace.join("\n"))
+          error("failed to load plugin:",$!)
+          exit if config[:exit_on_load_error]
         end
       end
     end
@@ -177,7 +178,7 @@ require 'lib/pubsub'
           debug("initializing plugin #{plugin.name}")
           callback.call(plugin)
         rescue
-          warn("failed initialing plugin: #{plugin.name} %s %s",$!,$!.backtrace.join("\n"))
+          error("failed initialing plugin: %s",plugin.name,$!)
         end
       end
     end
@@ -407,7 +408,7 @@ require 'lib/pubsub'
                 begin
                   cmd.message(self,message)
                 rescue
-                  warn("ERROR: %s %s",$!,$!.backtrace.join("\n"))
+                  error
                 end
               end
             end
@@ -460,6 +461,7 @@ require 'lib/pubsub'
       queue_items
     end
    
+public
     def debug(s,*args)
       Jabber::debuglog(args.empty? ? s : s % args)
     end
@@ -468,6 +470,16 @@ require 'lib/pubsub'
       Jabber::warnlog(args.empty? ? s : s % args)
     end
 
-  end
+    def error(*args)
+     e=args.pop||$!
+     if e.respond_to? :backtrace
+       s=(args.first ? (args.first % args[1..-1]) + ' ' : '')
+       warn("ERROR: %s%s %s", s, e, e.backtrace.join("\n"))
+     else
+       warn("ERROR: %s",e,*args)
+      end
+    end
+
+end
 
 # vim:ts=2:sw=2:expandtab

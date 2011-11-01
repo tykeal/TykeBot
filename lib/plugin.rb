@@ -1,10 +1,19 @@
-def make_binding(plugin)
-  @plugin=plugin
-  binding
-end
+class Plugin
+  attr_reader :bot, :name, :enabled, :file, :commands
 
-# create main object mixin for plugin DSL
-module Plugins
+  def initialize(bot,file)
+    @bot=bot
+    @file=file
+    @dir=File.dirname(file)
+    @name=parse_name(file)
+    @enabled=true
+    @commands = []
+  end
+
+  def plugin_require(filename)
+    Kernel.require(File.join(@dir,filename))
+  end
+
   #
   # :description=>string        #
   # :alias=>[]                  # of strings
@@ -21,54 +30,14 @@ module Plugins
     cmd[:is_public] = options.has_key?(:is_public) ? options[:is_public] : true
     cmd[:html] = options[:html]
     cmd[:enabled] = options.has_key?(:enabled) ? options[:enabled] : true
-    @plugin.add_command(cmd,&block)
+    add_command(cmd,&block)
   end
 
-  def init(&block)
-    @plugin.add_init(&block) 
-  end
-
-  def subscribe(name,&block)
-    @plugin.subscribe(name,&block)
-  end
-
-private
-  def command_regex(name,required,optional)
-    Regexp.compile("^%s%s%s$" % [
-      Regexp.quote(name.to_s),
-      Array(required).map{"(\s+.+?)"}.join,
-      Array(optional).map{"(\s+.+?)?"}.join
-    ])
-  end
-
-  def command_syntax(name,required,optional)
-    s="#{name}" 
-    s+=' ' + Array(required).map{|n|"<#{n}>"}.join(" ") if required
-    s+=' ' + Array(optional).map{|n|"[<#{n}>]"}.join(" ") if optional
-    s
-  end
-  
-end
-
-# bring into main namespace
-include Plugins
-
-
-# todo: maybe move into namespace?
-class Plugin
-  attr_reader :bot, :name, :enabled, :file, :commands
-
-  def initialize(bot,file)
-    @bot=bot
-    @file=file
-    @dir=File.dirname(file)
-    @name=parse_name(file)
-    @enabled=true
-    @commands = []
-  end
-
-  def require(filename)
-    Kernel.require(File.join(@dir,filename))
+  # advanced
+  def add_command(options,&block)
+    command = Command.new({:plugin=>self}.merge(options),&block)
+    @commands << command
+    bot.add_command(command)
   end
 
   def data_file(filename)
@@ -90,13 +59,7 @@ class Plugin
     @config_memo ||= symbolize_keys(load_config)
   end
 
-  def add_command(options,&block)
-    command = Command.new({:plugin=>self}.merge(options),&block)
-    @commands << command
-    bot.add_command(command)
-  end
-
-  def add_init(&block)
+  def init(&block)
     bot.add_plugin_init(self,&block)
   end
 
@@ -110,11 +73,22 @@ class Plugin
   end
 
   def debug(s,*args)
-   Jabber::debuglog(args.empty? ? s : s % args)
+    bot.debug(s,*args)
   end
 
   def warn(s,*args)
-   Jabber::warnlog(args.empty? ? s : s % args)
+    bot.warn(s,*args)
+  end
+  
+  # last arg must be the exception to log backtrace
+  # valid calls:
+  # error("string")
+  # error("string %s",'arg')
+  # error($!)
+  # error("string",$!)
+  # error("string %s",'arg1',...,$!)
+  def error(*args)
+    bot.error(*args)
   end
 
   def publish(name,*args)
@@ -125,6 +99,15 @@ class Plugin
     bot.subscribe(name,&callback)
   end
 
+  def plugin
+    self
+  end
+
+  # load this plugin file
+  def load
+    eval(open(file){|f|f.read}, binding, file, 1)
+  end
+  
 private
 
   def load_config
@@ -147,4 +130,18 @@ private
     return File.basename(File.dirname(file.strip)) 
   end
 
+  def command_regex(name,required,optional)
+    Regexp.compile("^%s%s%s$" % [
+      Regexp.quote(name.to_s),
+      Array(required).map{"(\s+.+?)"}.join,
+      Array(optional).map{"(\s+.+?)?"}.join
+    ])
+  end
+
+  def command_syntax(name,required,optional)
+    s="#{name}" 
+    s+=' ' + Array(required).map{|n|"<#{n}>"}.join(" ") if required
+    s+=' ' + Array(optional).map{|n|"[<#{n}>]"}.join(" ") if optional
+    s
+  end
 end

@@ -4,7 +4,7 @@ command(:shutdown,
 	:is_public   => false
 ) do |from, msg|
 	puts "#{from} shut down the bot"
-	plugin.bot.disconnect
+	bot.disconnect
 	exit
 end
 

@@ -1,6 +1,15 @@
 require 'json'
 require 'rexml/document'
 
+def hot(woeid)
+  trends_url="http://api.twitter.com/1/trends/#{config[:woeid]||2490383}.json"
+  JSON.parse(http_get(trends_url).body).first["trends"]
+end
+def search(q,limit)
+  search_url='http://search.twitter.com/search.json?q=%s&lang=en&result_type=popular&rpp=%d'
+  JSON.parse(http_get(search_url % [CGI.escape(q),limit]).body)["results"]
+end
+
 command(:hot,
 	:description => 'Show trending topics on twitter',
   :html        => true
@@ -8,8 +17,8 @@ command(:hot,
   begin
     p=REXML::Element.new('p')
     p.add_text("Here's what the kids are twatting about: ")
-    trends=TwitterApi.new(plugin.config[:woeid]).hot.reject{|t| t["promoted_content"]}
-    tweet = TwitterApi.new.search(trends.sample["name"],1).first
+    trends=hot(config[:woeid]||2490383).reject{|t| t["promoted_content"]}
+    tweet=search(trends.sample["name"],1).first
     if tweet
       p.add_text("@")
       p.add_text(tweet["from_user"])
@@ -25,23 +34,8 @@ command(:hot,
     end
     p.to_s
   rescue
-    plugin.warn("error talking to twitter: %s %s",$!,$!.backtrace.join("\n"))
+    error("problem talking to twitter",$!)
     "woops, I failed talking to twitter..."
   end
 end
 
-class TwitterApi
-  DEFAULT_WOEID=2490383 # seattle
-  URL='http://api.twitter.com/1/trends/%s.json'
-  SEARCH_URL='http://search.twitter.com/search.json?q=%s&lang=en&result_type=popular&rpp=%d'
-  def initialize(woeid=nil)
-    @woeid=woeid||DEFAULT_WOEID
-  end
-  def hot
-    JSON.parse(http_get(URL % @woeid).body).first["trends"]
-  end
-  def search(q,limit)
-    JSON.parse(http_get(SEARCH_URL % [CGI.escape(q),limit]).body)["results"]
-  end
-
-end

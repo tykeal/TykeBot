@@ -8,8 +8,8 @@ command(:help,
   # Commands are sorted alphabetically by name, and are displayed according
   # to the bot's and the commands's _public_ attribute.
   command_name = cmd.to_s.strip
-  master = plugin.bot.master?(sender)
-  commands = plugin.bot.commands(!master)
+  master = bot.master?(sender)
+  commands = bot.commands(!master)
   if command_name.length == 0
     # Display help for all commands
     "I understand the following commands:\n\n" +
