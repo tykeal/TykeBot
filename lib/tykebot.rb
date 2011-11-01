@@ -36,7 +36,6 @@
 # this stuff is worth it, you can buy me a beer in return. Vivien Didelot
 #++
 
-# vim:ts=2:sw=2:expandtab
 
 require 'rubygems'
 require 'xmpp4r'
@@ -44,6 +43,7 @@ require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
 require 'lib/command'
 require 'lib/tykemuc'
+require 'lib/crontimer'
 
   class TykeBot
     # Direct access to the Jabber::Framework::Bot
@@ -56,6 +56,8 @@ require 'lib/tykemuc'
     attr_reader :config
     # plugins
     attr_reader :plugins
+    # CronTimer
+    attr_reader :timer
 
     # Creates a new Jabber::Framework::Bot object with the specified +config+
     # Hash, which must contain +jabber_id+, +password+, and +master+ at a
@@ -122,6 +124,7 @@ require 'lib/tykemuc'
       @plugins=[]
       @commands = []
       @inits=[]
+      @timer=CronTimer.new()
     end
 
     # all-in-one helper for default behaviour
@@ -464,3 +467,5 @@ require 'lib/tykemuc'
     end
 
   end
+
+# vim:ts=2:sw=2:expandtab
