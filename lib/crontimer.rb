@@ -3,17 +3,14 @@ class CronTimer
   attr_reader :timer
 
   def initialize()
-    @timer = { }
+    @timer = []
     start_timer_thread
   end
 
   def add_timer(options, &callback)
     options[:timestamp] ||= Time.now + 1
     options[:requestor] ||= 'unknown'
-    if @timer[options[:timestamp].to_i].nil?
-      @timer[options[:timestamp].to_i] = []
-    end
-    @timer[options[:timestamp].to_i] << [options[:requestor], callback]
+    @timer << [options[:timestamp], options[:requestor], callback]
   end
 
   def delete_timer(options)
@@ -23,19 +20,11 @@ class CronTimer
       # No specific requestor made the delete request
       # we're going to just be mean and kill the entire timer
       # set attached to this time slot
-      @timer.delete(options[:timestamp].to_i)
+      @timer.delete_if { |ts,rq| ts == options[:timestamp] }
     else
-      # Hunt down and erradicate all the objects assigned to this
+      # Hunt down and erradicate all the events assigned to this
       # time slot by this requestor
-      events = @timer[options[:timestamp].to_i]
-      if !events.nil?
-        events.delete_if { |requestor, callback| requestor == options[:requestor] }
-        if !events.empty?
-          @timer[options[:timestamp].to_i] = events
-        else
-          @timer.delete(options[:timestamp].to_i)
-        end
-      end
+      @timer.delete_if { |ts,rq| ts == options[:timestamp] && rq == options[:requestor] }
     end
   end
 
@@ -45,11 +34,10 @@ private
       loop do
         if !@timer.empty?
           curtime = (Time.now)
-          if @timer.has_key?(curtime.to_i)
-            @timer[curtime.to_i].each do |requestor, callback|
-              callback.call()
-            end
-            delete_timer(:timestamp=>curtime)
+          while !@timer.empty? && @timer.sort[0][0] <= curtime do
+            timestamp, requestor, callback = @timer.sort[0]
+            callback.call()
+            delete_timer(:timestamp=>timestamp,:requestor=>requestor)
           end
         end
 
