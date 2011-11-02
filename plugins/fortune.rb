@@ -12,6 +12,14 @@ subscribe :join do |bot|
 end
 
 subscribe :welcome do |bot,message|
-  bot.send(:text => "Welcome %s! Here have a fortune:\n%s" % [bot.sender(message),get_fortune]) if started
+  if (rand(@config_memo[:random]) < 1)
+    bot.send(:text => "Welcome %s! Here have a fortune:\n%s" % [bot.sender(message),get_fortune]) if started
+  end
 end
 
+init do
+  config()
+  # just give our random welcome fortune a small chance
+  # can be set in config yaml
+  @config_memo[:random] ||= 3
+end
