@@ -72,25 +72,6 @@ class Plugin
     @enabled=enabled
   end
 
-  def debug(s,*args)
-    bot.debug(s,*args)
-  end
-
-  def warn(s,*args)
-    bot.warn(s,*args)
-  end
-  
-  # last arg must be the exception to log backtrace
-  # valid calls:
-  # error("string")
-  # error("string %s",'arg')
-  # error($!)
-  # error("string",$!)
-  # error("string %s",'arg1',...,$!)
-  def error(*args)
-    bot.error(*args)
-  end
-
   def publish(name,*args)
     bot.publish(name,*args)
   end

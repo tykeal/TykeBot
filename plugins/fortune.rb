@@ -1,17 +1,17 @@
 forcedevent = nil
+started = false
 
 def get_fortune
   `/usr/bin/fortune`
 end
 
-command(:fortune,
-  :description => 'get a fortune'
-) { get_fortune() }
+command(:fortune,:description => 'get a fortune') { get_fortune() }
 
-subscribe :give_fortune do |options|
-  fortune = get_fortune()
-  if !options[:fortune_prefix].nil?
-    fortune = options[:fortune_prefix] + fortune
-  end
-  bot.send(:text=>fortune)
+subscribe :join do |bot|
+  bot.timer.add_timer(:timestamp=>Time.now + 2, :requestor=>'fortune_plugin') { started = true }
 end
+
+subscribe :welcome do |bot,message|
+  bot.send(:text => "Welcome %s! Here have a fortune:\n%s" % [bot.sender(message),get_fortune]) if started
+end
+

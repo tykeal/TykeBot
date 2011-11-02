@@ -2,6 +2,31 @@ require 'net/http'
 require 'net/https'
 require 'cgi'
 
+def debug(s,*args)
+  Jabber::debuglog(args.empty? ? s : s % args)
+end
+
+def warn(s,*args)
+  Jabber::warnlog(args.empty? ? s : s % args)
+end
+
+# last arg must be the exception to log backtrace
+# valid calls:
+# error("string")
+# error("string %s",'arg')
+# error($!)
+# error("string",$!)
+# error("string %s",'arg1',...,$!)
+def error(*args)
+ e=args.pop||$!
+ if e.respond_to? :backtrace
+   s=(args.first ? (args.first % args[1..-1]) + ' ' : '')
+   warn("ERROR: %s%s %s", s, e, e.backtrace.join("\n"))
+ else
+   warn("ERROR: %s",e,*args)
+  end
+end
+
 def symbolize_keys(hash)
   hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
 end

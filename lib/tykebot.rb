@@ -41,19 +41,18 @@ require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
-require 'lib/command'
+require 'lib/utils'
 require 'lib/tykemuc'
 require 'lib/crontimer'
 require 'lib/pubsub'
+require 'lib/plugin'
+require 'lib/command'
 
 class TykeBot
-    include PubSub
     # Direct access to the Jabber::Framework::Bot
     attr_reader :jabber
     # Direct access to the Jabber::MUC::SimpleMUCClient
     attr_reader :room
-    # Direct access to our listener_thread
-    attr_reader :listener_thread
     # Access to our config object
     attr_reader :config
     # plugins
@@ -127,6 +126,8 @@ class TykeBot
       @commands = []
       @inits=[]
       @timer=CronTimer.new()
+
+      @pubsub = PubSub.new(:start_publisher=>true)
     end
 
     # all-in-one helper for default behaviour
@@ -183,6 +184,18 @@ class TykeBot
       end
     end
 
+    # connect the bot, join the room, and join the pubsub thread
+    # try to reconnect periodically if we become disconnected
+    def run(check_connection_every_n_seconds=20)
+      loop do
+        unless connected?
+          connect
+          join if config[:room]
+        end
+        @pubsub.join(check_connection_every_n_seconds)
+      end 
+    end
+
     # Connect the bot, making it available to accept commands.
     # You can specify a custom startup message with the ':startup_message'
     # configuration setting.
@@ -190,17 +203,12 @@ class TykeBot
       jid = Jabber::JID.new(@config[:jabber_id])
       begin
         @jabber = Jabber::Framework::Bot.new(jid, @config[:password])
-        # Make sure we're connected before trying to attach a room
         if connected?
-          @room = TykeMuc.new(@jabber.stream)
-
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
-            receive_message(message) if valid_chat?(message)
+            publish_command(message) if valid_command?(message)
           end
-
-          start_listener_thread
         end
       rescue Exception => e
         # Do nothing
@@ -226,52 +234,41 @@ class TykeBot
 
       # We need a connection or else we'll blow up
       if connected?
+        @room = TykeMuc.new(@jabber.stream)
         @room.join(jid)
 
         @room.add_message_callback do |message|
-          if valid_chat?(message)
+          # don't include past messages in firehose for now
+          publish(:firehose, self, message) unless delay_message?(message)
+          if valid_command?(message)
             message.body = strip_prefix(message.body)
-            receive_message(message) 
+            publish_command(message) 
           end
         end
-      end
-    end
 
-    # Customize a welcome message for new connected people.
-    # The given callback takes a |user| parameter and
-    # should return the welcome message.
-    #
-    #   welcome { |person| "Hello #{person}!" }
-    def welcome(&callback)
-      @room.add_join_callback do |message|
-        response = callback.call(message.from.resource)
-        send(:text=>response) unless response.nil?
-      end
-    end
+        @room.add_join_callback do |message|
+          publish(:welcome, self, message) 
+        end
 
-    # Customize a leave message for people leaving room.
-    # The given callback takes a |user| parameter and
-    # should return the leave message.
-    #
-    #   leave { |person| "Apparently #{person} didn't like something I said :(" }
-    def leave(&callback)
-      @room.add_leave_callback do |message|
-        response = callback.call(message.from.resource)
-        send(:text=>response) unless response.nil?
+        @room.add_leave_callback do |message|
+          publish(:leave, self, message)
+        end
+ 
+        publish(:join, self)
       end
     end
 
     # Disconnect the bot. Once the bot has been disconnected, there is no way
     # to restart it by issuing a command.
     def disconnect
-      if @jabber.stream.is_connected?
+      if connected?
         send(:to=>@config[:master], :text=>"#{@config[:name]} disconnecting...")
         @jabber.stream.close
       end
     end
 
     # Returns an Array of masters
-    def master
+    def masters
       Array(@config[:master])
     end
 
@@ -283,7 +280,7 @@ class TykeBot
       when String
         message
       end
-      master.include?(sender)
+      masters.include?(sender)
     end
 
     def groupchat?(message)
@@ -293,11 +290,19 @@ class TykeBot
     # Returns the jabber-id of the sender
     # TODO: fix for :groupchat messages.
     def sender(message)
-      if groupchat?(message)
-        # this is broken.
+      case message
+      when Jabber::Presence
+        # broken, this is actually the nick name
         message.from.resource.to_s
-      else
-        message.from.to_s.sub(/\/.+$/, '')
+      when Jabber::Message
+        if message.type == :groupchat
+          # broken, this is actually the nick name
+          message.from.resource.to_s
+        else
+          message.from.to_s.sub(/\/.+$/, '')
+        end 
+      when String
+        message
       end
     end
 
@@ -369,13 +374,30 @@ class TykeBot
 
     def add_command(command)
       @commands << command
+      subscribe(:command) {|bot,message| command.message(bot,message)}
     end
 
-    private
+    def delay_message?(message)
+      message.first_element('delay') 
+    end
 
-    def valid_chat?(message) #:nodoc:
+    def public?
+      config[:is_public]
+    end
+
+    def publish(name,*params)
+      @pubsub.publish(name,*params)
+    end
+
+    def subscribe(name,&callback)
+      @pubsub.subscribe(name,&callback)
+    end
+
+private
+
+    def valid_command?(message) #:nodoc:
       (message.body && 
-      !message.first_element('delay')) && 
+      !delay_message?(message)) && 
         ((message.type == :chat &&
           sender(message) != @config[:name]) ||
         (message.type == :groupchat &&
@@ -389,95 +411,8 @@ class TykeBot
       p[1]
     end
 
-    # Creates a new Thread dedicated to listening for incoming chat messages.
-    # When a chat message is received, the bot checks if the sender is its
-    # master. If so, it is tested for the presence commands, and processed
-    # accordingly. If the bot itself or the command issued is not made public,
-    # a message sent by anyone other than the bot's master is silently ignored.
-    #
-    # Only the chat & groupchat message type are supported. Other message types
-    # such as error are not supported.
-    def start_listener_thread
-      @listener_thread = Thread.new do
-        loop do
-          if received_messages?
-            received_messages do |message|
-              from_master = master?(message)
-              next unless @config[:is_public] || from_master
-              commands(!from_master).each do |cmd| 
-                begin
-                  cmd.message(self,message)
-                rescue
-                  error
-                end
-              end
-            end
-          end
-          sleep 1
-        end
-      end
-    end
-
-    # Returns an array of messages received since the last time
-    # received_messages was called. Passing a block will yield each message in
-    # turn, allowing you to break part-way through processing (especially
-    # useful when your message handling code is not thread-safe (e.g.,
-    # ActiveRecord).
-    #
-    # e.g.:
-    #
-    #   jabber.received_messages do |message|
-    #     puts "Received message from #{message.from}: #{message.body}"
-    #   end
-    def received_messages(&block)
-      dequeue(:received_messages, &block)
-    end
-
-    # Returns true if there are unprocessed received messages waiting in the
-    # queue, false otherwise.
-    def received_messages?
-      !queue(:received_messages).empty?
-    end
-
-    def receive_message(message)
-      queue(:received_messages) << message
-    end
-
-    # Basic queue
-    def queue(queue) #:nodoc:
-      @queues ||= Hash.new { |h,k| h[k] = Queue.new }
-      @queues[queue]
-    end
-
-    # dequeueing #:nodoc:
-    def dequeue(queue, non_blocking = true, max_items = 100, &block)
-      queue_items = []
-      max_items.times do
-        queue_item = queue(queue).pop(non_blocking) rescue nil
-        break if queue_item.nil?
-        queue_items << queue_item
-        yield queue_item if block_given?
-      end
-      queue_items
-    end
-   
-public
-    def debug(s,*args)
-      Jabber::debuglog(args.empty? ? s : s % args)
-    end
- 
-    def warn(s,*args)
-      Jabber::warnlog(args.empty? ? s : s % args)
-    end
-
-    def error(*args)
-     e=args.pop||$!
-     if e.respond_to? :backtrace
-       s=(args.first ? (args.first % args[1..-1]) + ' ' : '')
-       warn("ERROR: %s%s %s", s, e, e.backtrace.join("\n"))
-     else
-       warn("ERROR: %s",e,*args)
-      end
+    def publish_command(message)
+      publish :command, self, message if public? || master?(message)
     end
 
 end
