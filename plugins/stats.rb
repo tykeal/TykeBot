@@ -9,7 +9,7 @@ command(:stats,
     data_save_yaml({})
     stats = {}
   when 'show'
-    bot.commands(!bot.master?(sender)).map{|cmd| "%s=%d" % [cmd.name,stats[cmd.name]||0]}.join("\n")
+    bot.commands(!bot.master?(sender)).sort.map{|cmd| "%s=%d" % [cmd.name,stats[cmd.name]||0]}.join("\n")
   else 
     "Sorry, I don't know how to stats #{action}"
   end
