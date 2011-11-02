@@ -1,6 +1,5 @@
 class PubSub
-  attr_accessor :publish_thread
- 
+
   def initialize(options={})
     @queue = Queue.new
     @subscribers={}
