@@ -12,11 +12,10 @@ command(:help,
   commands = bot.commands(!master)
   if command_name.length == 0
     # Display help for all commands
-    "I understand the following commands:\n\n" +
+    "I understand the following commands:\n" +
       commands.sort.map do |command|
-        master_text="[%s] " % (command.plugin ? "#{command.plugin.name}:plugin":'builtin') if master
-        command.syntax.join("\n") + "\n  %s%s" % [master_text,command.description]
-      end.join("\n\n")
+        "  %s - %s" % [command.name,command.description]
+      end.join("\n")
   else
     # Display help for the given command
     if command = commands.detect{|cmd| cmd.name==command_name}

@@ -21,11 +21,11 @@ class Plugin
   #
   def command(name,options={},&block)
     cmd={}
-    ([name] + Array(options[:alias])).each do |name|
+    cmd[:name] = name.to_s
+    ([cmd[:name]] + Array(options[:alias])).each do |name|
       (cmd[:regex]||=[]) << command_regex(name,options[:required],options[:optional])
       (cmd[:syntax]||=[]) << command_syntax(name,options[:required],options[:optional])
     end
-    cmd[:name] = name.to_s
     cmd[:description] = options[:description]
     cmd[:is_public] = options.has_key?(:is_public) ? options[:is_public] : true
     cmd[:html] = options[:html]
