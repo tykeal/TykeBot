@@ -3,7 +3,7 @@ plugin_require('wolfram.rb')
 command(:whats,
   :required    => :query,
   :description => 'ask wolfram alpha'
-) do |sender,query| 
+) do |message,query| 
   begin 
     results = WolframApi.new(config[:api_key]).query(query)
     if results && results.size > 0

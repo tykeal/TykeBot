@@ -16,7 +16,7 @@ command(:plugin,
   :optional=>[:name,:action],
   :description  => 'manage plugins, action can be "enable" or "disable"',
   :is_public    => false
-) do |sender, name, action|
+) do |message, name, action|
   
   # Returns the default help message describing the bot's command repertoire.
   # Commands are sorted alphabetically by name, and are displayed according

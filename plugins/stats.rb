@@ -2,7 +2,7 @@ stats={}
 command(:stats,
   :optional => :action,
   :description => "show stats for the bot"
-) do |sender,action|
+) do |message,action|
   action = (action || 'show').strip
   case action
   when 'clear'

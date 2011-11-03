@@ -28,7 +28,7 @@ class Command
     #
     # The specified callback block will be triggered when the bot receives a
     # message that matches the given command regex (or an alias regex). The
-    # callback block will have access to the sender and the parameter(s) (not
+    # callback block will have access to the raw message and the parameter(s) (not
     # including the command itself), and should either return a String response
     # or +nil+. If a callback block returns a String response, the response will
     # be delivered to the Jabber id that issued the command.
@@ -42,9 +42,9 @@ class Command
     #     :description => 'Write something to $stdout',
     #     :regex       => /^puts\s+(.+)$/,
     #     :alias       => [ :syntax => 'p <string>', :regex => /^p\s+(.+)$/ ]
-    #   ) do |sender, message|
-    #     puts "#{sender} says #{message}."
-    #     "'#{message}' written to $stdout."
+    #   ) do |message, msg|
+    #     puts "#{bot.sender(message)} says #{msg}."
+    #     "'#{msg}' written to $stdout."
     #   end
     #
     #   # 'puts!' is a non-responding version of 'puts', and has two aliases,
@@ -57,8 +57,8 @@ class Command
     #       { :syntax => 'p! <string>', :regex => /^p!\s+(.+)$/ },
     #       { :syntax => '! <string>', :regex => /^!\s+(.+)$/ }
     #     ]
-    #   ) do |sender, message|
-    #     puts "#{sender} says #{message}."
+    #   ) do |message, msg|
+    #     puts "#{bot.sender(message)} says #{msg}."
     #     nil
     #   end
     #
@@ -97,7 +97,7 @@ class Command
     if m = @regex.map{|r| message.body.match(r)}.compact.first
       sender = bot.sender(message)
       bot.publish(:command_match,self,sender,message,m.captures)
-      if response = @callback.call(sender,*m.captures) 
+      if response = @callback.call(message,*m.captures) 
         to = sender unless bot.groupchat?(message)
         type = @html ? :xhtml : :text
         bot.send(type=>response,:to=>to)

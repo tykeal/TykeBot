@@ -2,7 +2,7 @@ command(:help,
   :description=>'Display help for the given command, or all commands if no command is specified',
   :alias=>'?',
   :optional=>:command
-) do |sender, cmd|
+) do |message, cmd|
 
   # Returns the default help message describing the bot's command repertoire.
   # Commands are sorted alphabetically by name, and are displayed according

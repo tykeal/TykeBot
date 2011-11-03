@@ -2,8 +2,8 @@
 command(:shutdown,
 	:description => 'Shut down Bot',
 	:is_public   => false
-) do |from, msg|
-	puts "#{from} shut down the bot"
+) do |message|
+	puts "#{bot.sender(message)} shut down the bot"
 	bot.disconnect
 	exit
 end

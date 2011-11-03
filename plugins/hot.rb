@@ -13,7 +13,7 @@ end
 command(:hot,
 	:description => 'Show trending topics on twitter',
   :html        => true
-) do |sender|
+) do |message|
   begin
     p=REXML::Element.new('p')
     p.add_text("Here's what the kids are twatting about: ")
