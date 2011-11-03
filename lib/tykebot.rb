@@ -374,7 +374,7 @@ class TykeBot
 
     def add_command(command)
       @commands << command
-      subscribe(:command) {|bot,message| command.message(bot,message)}
+      subscribe(:command) {|bot,message| command.message(bot,message) if command.public? || master?(message)}
     end
 
     def delay_message?(message)
