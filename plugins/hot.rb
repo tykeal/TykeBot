@@ -1,38 +1,34 @@
 require 'json'
-require 'rexml/document'
 
 def hot(woeid)
   trends_url="http://api.twitter.com/1/trends/#{config[:woeid]||2490383}.json"
-  JSON.parse(http_get(trends_url).body).first["trends"]
+  JSON.parse(http_get(trends_url).body).first["trends"].reject{|t| t["promoted_content"]}
 end
-def search(q,limit)
-  search_url='http://search.twitter.com/search.json?q=%s&lang=en&result_type=popular&rpp=%d'
-  JSON.parse(http_get(search_url % [CGI.escape(q),limit]).body)["results"]
+def search(q)
+  search_url='http://search.twitter.com/search.json?q=%s&lang=en&result_type=popular&rpp=1'
+  JSON.parse(http_get(search_url % CGI.escape(q)).body)["results"].first
+end
+def render_tweet(tweet)
+  tweet ? "@%s %s" % [tweet["from_user"],tweet["text"]] : 'no tweets found...'
+end
+def render_topic(t)
+  '<a href="%s">%s</a>' % [t["url"],h(t["name"])]
 end
 
 command(:hot,
+  :optional=>:topic,
 	:description => 'Show trending topics on twitter',
   :html        => true
-) do |message|
+) do |message,topic|
   begin
-    p=REXML::Element.new('p')
-    p.add_text("Here's what the kids are twatting about: ")
-    trends=hot(config[:woeid]||2490383).reject{|t| t["promoted_content"]}
-    tweet=search(trends.sample["name"],1).first
-    if tweet
-      p.add_text("@")
-      p.add_text(tweet["from_user"])
-      p.add_text(" ")
-      p.add_text(tweet["text"])
-      p.add_element('br')
+    if topic
+      render_tweet(search(topic))
+    else
+      trends=hot(config[:woeid]||2490383)
+      "<p>Here's what the kids are tweeting about: " +
+        "#{render_tweet(search(trends.sample["name"]))}" +
+        "<br/><br/>#{trends.map{|t|render_topic(t)}.join(", ")}</p>"
     end
-    trends.each_with_index do |t,i|  
-      a=p.add_element('a')
-      a.text=t["name"]
-      a.add_attribute("href",t["url"])
-      p.add_text(', ') unless i==trends.size-1
-    end
-    p.to_s
   rescue
     error("problem talking to twitter",$!)
     "woops, I failed talking to twitter..."
