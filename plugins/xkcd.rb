@@ -1,10 +1,15 @@
 require 'json'
 
-QUERY_URL = "http://api.duckduckgo.com/?q=!ducky+site:www.xkcd.com+%s&format=json&no_redirect=1"
+QUERY_URL = "http://api.duckduckgo.com/?q=!ducky+site:m.xkcd.com+%s&format=json&no_redirect=1"
+
+def xkcd_format_url(url)
+  '<a href="%s">%s</a>' % [url, url]
+end
 
 def xkcd_search(q)
   output = http_get(QUERY_URL % CGI.escape(q)).body
-  JSON.parse(output)["Redirect"].first
+  url = JSON.parse(output)["Redirect"].first
+  /http[s]*:\/\/m.xkcd.com\/[0-9]+/.match(url) ? format(url) : "xkcd hasn't covered that subject. Are you sure you exist?"
 end
 
 command(:xkcd, 
@@ -12,6 +17,5 @@ command(:xkcd,
   :description => "Find an XKCD strip for a subject",
   :html => true
 ) do |message,q|
-  search_output = xkcd_search(q)
-  '<a href="%s">%s</a>' % [search_output, search_output]
+  xkcd_search(q)
 end
