@@ -1,3 +1,10 @@
+class Object
+  def returning(val)
+    yield(val)
+    val
+  end
+end
+
 class Array
   def sample ; self[rand(size)] ; end
 end

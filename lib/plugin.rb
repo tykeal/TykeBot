@@ -83,11 +83,6 @@ class Plugin
   def plugin
     self
   end
-
-  # load this plugin file
-  def load
-    eval(open(file){|f|f.read}, binding, file, 1)
-  end
   
 private
 
