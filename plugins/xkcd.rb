@@ -6,7 +6,7 @@ def xkcd_format_url(url)
   '<a href="%s">%s</a>' % [url, url]
 end
 
-def xkcd_search(q)
+def search(q)
   output = http_get(QUERY_URL % CGI.escape(q)).body
   url = JSON.parse(output)["Redirect"].first
   /http[s]*:\/\/m.xkcd.com\/[0-9]+/.match(url) ? format(url) : "xkcd hasn't covered that subject. Are you sure you exist?"
@@ -17,5 +17,5 @@ command(:xkcd,
   :description => "Find an XKCD strip for a subject",
   :html => true
 ) do |message,q|
-  xkcd_search(q)
+  search(q)
 end

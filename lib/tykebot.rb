@@ -42,6 +42,7 @@ require 'xmpp4r'
 require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
 require 'lib/utils'
+require 'lib/dynamic_loader'
 require 'lib/hacks'
 require 'lib/tykemuc'
 require 'lib/crontimer'
@@ -158,7 +159,7 @@ class TykeBot
       plugins.each do |plugin|
         begin
           debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
-          plugin.load
+          DynamicLoader.new{plugin}.load(plugin.file)
           @plugins << plugin
         rescue
           error("failed to load plugin:",$!)
