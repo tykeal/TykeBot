@@ -1,15 +1,17 @@
 require 'json'
+require 'nokogiri'
+require 'open-uri'
+require "cgi"
 
-QUERY_URL = "http://api.duckduckgo.com/?q=!ducky+site:m.xkcd.com+%s&format=json&no_redirect=1"
-
-def format_url(url)
-  '<a href="%s">%s</a>' % [url, url]
+def format_url(url,text=nil)
+  '<a href="%s">%s</a>' % [url, text||url]
 end
 
 def search(q)
-  output = http_get(QUERY_URL % CGI.escape(q)).body
-  url = JSON.parse(output)["Redirect"].first
-  /http[s]*:\/\/m.xkcd.com\/[0-9]+/.match(url) ? format_url(url) : "xkcd hasn't covered that subject. Are you sure you exist?"
+  doc = Nokogiri::HTML(open('http://www.google.com/search?q=site:m.xkcd.com+'+CGI.escape(q)))
+  urls = doc.xpath('//cite').map{ |link| link.text}.select{|u| u.match(/m\.xkcd\.com\/\d+/)}
+  url = urls[rand(urls.size)] 
+  url ? format_url("http://"+url,"xkcd on "+q) : "xkcd hasn't covered that subject. Are you sure you exist?"
 end
 
 command(:xkcd, 
