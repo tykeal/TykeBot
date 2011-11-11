@@ -58,7 +58,7 @@ def http_get(uri_str, limit = 10)
 
   url = URI.parse(uri_str)
   http = Net::HTTP.new(url.host, url.port)
-  request = Net::HTTP::Get.new(url.path + (url.query ?  "?" + url.query : ''))
+  request = Net::HTTP::Get.new(url.path + (url.query ?  "?" + url.query : ''), {"User-Agent" => "curl"})
   response = http.start {|http| http.request(request) }
 
   case response
