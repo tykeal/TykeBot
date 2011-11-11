@@ -3,6 +3,7 @@ GEM
   specs:
     json (1.6.1)
     json (1.6.1-java)
+    nokogiri (1.5.0)
     xmpp4r (0.5)
 
 PLATFORMS
@@ -11,4 +12,5 @@ PLATFORMS
 
 DEPENDENCIES
   json
+  nokogiri
   xmpp4r
