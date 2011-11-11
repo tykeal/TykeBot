@@ -10,7 +10,7 @@ end
 def search(q)
   doc = Nokogiri::HTML(open('http://www.google.com/search?q=site:m.xkcd.com+'+CGI.escape(q)))
   urls = doc.xpath('//cite').map{ |link| link.text}.select{|u| u.match(/m\.xkcd\.com\/\d+/)}.uniq
-  url.first ? urls.map[format_url("http://"+url)].join("<br/>\n") : "xkcd hasn't covered that subject. Are you sure you exist?"
+  urls.first ? urls.map{|url| format_url("http://"+url)}.join("<br/>\n") : "xkcd hasn't covered that subject. Are you sure you exist?"
 end
 
 command(:xkcd, 
