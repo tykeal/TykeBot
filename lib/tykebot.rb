@@ -41,6 +41,7 @@ require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
+require 'sanitize'
 require 'lib/utils'
 require 'lib/dynamic_loader'
 require 'lib/hacks'
@@ -190,11 +191,15 @@ class TykeBot
     # try to reconnect periodically if we become disconnected
     def run(check_connection_every_n_seconds=20)
       loop do
-        unless connected?
-          connect
-          join if config[:room]
+        begin
+          unless connected?
+            connect
+            join if config[:room]
+          end
+          @pubsub.join(check_connection_every_n_seconds)
+        rescue
+          error
         end
-        @pubsub.join(check_connection_every_n_seconds)
       end 
     end
 
@@ -219,11 +224,7 @@ class TykeBot
     end
 
     def connected?
-      if jabber.nil?
-        return false
-      else
-        jabber.stream.is_connected?
-      end
+      jabber && jabber.stream.is_connected?
     end
 
     # Join the bot to the room and enable callbacks.
@@ -376,7 +377,7 @@ class TykeBot
 
     def add_command(command)
       @commands << command
-      subscribe(:command) {|bot,message| command.message(bot,message) if command.public? || master?(message)}
+      subscribe(:command){|bot,message| command.message(bot,message) if command.public? || master?(message)}
     end
 
     def delay_message?(message)

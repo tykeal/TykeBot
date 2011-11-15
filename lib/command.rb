@@ -98,9 +98,14 @@ class Command
       sender = bot.sender(message)
       bot.publish(:command_match,self,sender,message,m.captures)
       if response = @callback.call(message,*m.captures) 
-        to = sender unless bot.groupchat?(message)
-        type = @html ? :xhtml : :text
-        bot.send(type=>response,:to=>to)
+        to = sender unless bot.groupchat?(message) 
+        if @html
+          html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge(:output=>:xhtml))
+          debug("sanitized html: #{html}")
+          bot.send(:xhtml=>html,:to=>to)
+        else
+          bot.send(:text=>response,:to=>to)
+        end
       end
     end
   end

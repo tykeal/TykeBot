@@ -18,7 +18,14 @@ command(:links,
       lines.size<n 
     end
   end if File.exist?(file)
-  lines.reverse.map{|info| '%s %s <a href="%s">%s</a>' % [Time.at(info['time']).strftime(format),info['from'],info['url'],URI.parse(info['url']).host]}.join("\n<br/>")
+  lines.reverse.map{|info| 
+    '%s %s <a href="%s">%s</a>' % [
+      h(Time.at(info['time']).strftime(format)),
+      h(info['from']),
+      h(info['url']),
+      h(URI.parse(info['url']).host)
+    ]
+  }.join("\n<br/>")
 end
 
 subscribe(:firehose) do |bot,message|
