@@ -20,8 +20,12 @@ class PubSub
   def start_publisher
     @publisher_thread=Thread.new do
       loop do
-        name, params = @queue.pop # blocks
-        (@subscribers[name]||[]).each {|callback| dispatch(params,callback)}
+        begin 
+          name, params = @queue.pop # blocks
+          (@subscribers[name]||[]).each {|callback| dispatch(params,callback)}
+        rescue Exception => e
+          error(e)
+        end
       end
     end
   end
@@ -38,11 +42,13 @@ class PubSub
 
 private
  
+  # call the subscriber's callback with published params
+  # and trap errors aggressively.  For now we just log.
   def dispatch(params,callback)
     begin
       callback.call(*params)
-    rescue
-      error
+    rescue Exception => e
+      error(e)
     end
   end
 

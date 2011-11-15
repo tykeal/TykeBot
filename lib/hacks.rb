@@ -29,8 +29,8 @@ class File
       chunk += lines.first unless lines.empty?
       lines = chunk.split("\n")
       lines[(done ? 0 : 1)..-1].reverse.each do |line| 
-        result = yield line
-        break unless result 
+        result = yield(line)
+        return unless result 
       end
       seek(-to_read,SEEK_CUR)
     end
