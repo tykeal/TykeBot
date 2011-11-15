@@ -45,6 +45,7 @@ require 'lib/utils'
 require 'lib/dynamic_loader'
 require 'lib/hacks'
 require 'lib/tykemuc'
+require 'lib/tyke_message'
 require 'lib/crontimer'
 require 'lib/pubsub'
 require 'lib/plugin'
@@ -209,6 +210,7 @@ class TykeBot
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
+            message = TykeMessage.new(message)
             publish_command(message) if valid_command?(message)
           end
         end
@@ -240,6 +242,7 @@ class TykeBot
         @room.join(jid)
 
         @room.add_message_callback do |message|
+          message = TykeMessage.new(message)
           # don't include past messages in firehose for now
           publish(:firehose, self, message) unless delay_message?(message)
           if valid_command?(message)
