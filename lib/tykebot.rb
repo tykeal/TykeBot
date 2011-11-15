@@ -215,13 +215,14 @@ class TykeBot
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
-            message = TykeMessage.new(message)
+            #message = TykeMessage.new(message)
             publish_command(message) if valid_command?(message)
           end
         end
       rescue Exception => e
         # Do nothing
         # AKA eat the baby right now
+        puts e.message
       end
     end
 
@@ -243,12 +244,17 @@ class TykeBot
         @room.join(jid)
 
         @room.add_message_callback do |message|
-          message = TykeMessage.new(message)
+          #message = TykeMessage.new(message)
           # don't include past messages in firehose for now
           publish(:firehose, self, message) unless delay_message?(message)
           if valid_command?(message)
+            begin
             message.body = strip_prefix(message.body)
             publish_command(message) 
+            rescue Exception =>e
+              puts e.message
+            end
+
           end
         end
 
