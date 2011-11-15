@@ -9,7 +9,8 @@ command(:links,
   :html=>true
 ) do |message,n,sender|
   n = (n || 5).to_i
-  n = limit if n > limit
+  n = limit if n > limit && message.group_chat?
+  
   lines = []
   open(file) do |f| 
     f.reverse_readline do |line| 
