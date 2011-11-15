@@ -215,7 +215,7 @@ class TykeBot
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
-            #message = TykeMessage.new(message)
+            message = TykeMessage.new(message)
             publish_command(message) if valid_command?(message)
           end
         end
@@ -244,7 +244,7 @@ class TykeBot
         @room.join(jid)
 
         @room.add_message_callback do |message|
-          #message = TykeMessage.new(message)
+          message = TykeMessage.new(message)
           # don't include past messages in firehose for now
           publish(:firehose, self, message) unless delay_message?(message)
           if valid_command?(message)
@@ -287,7 +287,7 @@ class TykeBot
     # Returns +true+ if the message/jabber-id is from a master +false+ otherwise.
     def master?(message)
       sender = case message
-      when Jabber::Message
+      when Jabber::Message,TykeMessage
         sender(message)
       when String
         message
@@ -306,7 +306,7 @@ class TykeBot
       when Jabber::Presence
         # broken, this is actually the nick name
         message.from.resource.to_s
-      when Jabber::Message
+      when Jabber::Message,TykeMessage
         if message.type == :groupchat
           # broken, this is actually the nick name
           message.from.resource.to_s
