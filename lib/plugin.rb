@@ -1,5 +1,9 @@
+require 'forwardable'
 class Plugin
+  extend Forwardable
   attr_reader :bot, :name, :enabled, :file, :commands
+
+  def_delegators :@bot, :publish, :on, :send
 
   def initialize(bot,file)
     @bot=bot
@@ -40,18 +44,37 @@ class Plugin
     bot.add_command(command)
   end
 
-  def data_file(filename)
+  def data_file(filename=nil)
     # todo isolate plugins in their own dir
-    filename ||= "#{name}.yaml"
+    filename ||= default_data_filename
     File.join(bot.config[:data_dir] || 'data',filename)
   end
 
-  def data_save_yaml(data,filename=nil)
-    open(data_file(filename),"w"){|f| f.puts YAML::dump(data)}
+  # defaults to yaml and plugin name .yaml
+  def save_data(data,filename=nil)
+    filename=data_file(filename)
+    case File.extname(filename).downcase
+    when ".yaml",".yml"
+      open(filename,"w"){|f| f.puts YAML.dump(data)}
+    when ".json"
+      open(filename,"w"){|f| f.puts JSON.generate(data)}
+    else
+      open(filename,"w"){|f| f.puts data }
+    end
   end
 
-  def data_load_yaml(filename=nil)
-    YAML.load(File.open(data_file(filename))) if File.exist?(data_file(filename))
+  # defaults to yaml and plugin name .yaml
+  def load_data(filename=nil)
+    filename=data_file(filename)
+    return unless File.exist?(filename)
+    case File.extname(filename).downcase
+    when ".yaml",".yml"
+      YAML.load(File.open(filename))
+    when ".json"
+      JSON.parse(File.read(filename))
+    else
+      File.read(filename)
+    end
   end
 
   def config
@@ -72,16 +95,17 @@ class Plugin
     @enabled=enabled
   end
 
-  def publish(name,*args)
-    bot.publish(name,*args)
-  end
-
-  def subscribe(name,&callback)
-    bot.subscribe(name,&callback)
-  end
-
+  # @deprecated
+  # for backward plugin compatibility
   def plugin
     self
+  end
+
+  # timeout - min num of seconds before calling callback
+  # options
+  #   :requestor (defaults to self.name)
+  def timer(timeout,options={},&callback)
+    bot.timer.add_timer(:timestamp=>Time.now+timeout.to_i, :requestor=>options[:requestor]||name,&callback)
   end
   
 private
@@ -98,6 +122,10 @@ private
     
     # no config found, use empty
     {}
+  end
+
+  def default_data_filename(ext=".yaml")
+    name + ext
   end
 
   def parse_name(file)

@@ -29,7 +29,7 @@ command(:links,
   }.join("\n<br/>")
 end
 
-subscribe(:firehose) do |bot,message|
+on :firehose do |bot,message|
   URI.extract(message.body, ['http', 'https']).each do |url|
     open(file,"a"){|f| f.puts JSON.generate({
       :url=>url,

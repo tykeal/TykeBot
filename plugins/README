@@ -1,6 +1,6 @@
 Welcome to TykeBot, making a plugin is easy!
 
-Just create a script in the plugins dir.  When the bot loads up, your script will be run and have access to a plugin variable, which is an instance of lib/plugin.rb already setup for your script.  Simply use the plugin DSL or the plugin object to add commands,s access your plugin.config, or get access to the raw bot object plugin.bot.
+Just create a script in the plugins dir.  When the bot loads up, your script will be run and have access to a plugin variable, which is an instance of lib/plugin.rb already setup for your script.  Simply use the plugin DSL or the plugin object to add commands, access your plugin.config, or get access to the raw bot object plugin.bot.
 
 ex:
 
@@ -19,10 +19,22 @@ ex:
  13 git clone git://github.com/tykeal/TykeBot.git"
  14 }
 
-Note you can use the plugin variable / DSL from within the command block as well.
+
+DSL: (see lib/plugins.rb for details)
+- on
+- publish
+- config
+- command
+- send
+- load_data
+- save_data
+- init
+- timer
+- plugin
+
+Note: you can use the plugin variable / DSL from within the command block as well.
 
 If you have multiple files for your plugin, you can create a directory in plugins/ and make an init.rb script.  Everything else will be the same, but you can plugin.require('yourfile') without having to worry about paths, just use relative paths from your directory.
-
 
 
 # TODO: resources

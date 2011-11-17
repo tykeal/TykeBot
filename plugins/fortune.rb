@@ -1,45 +1,41 @@
-forcedevent = nil
+last_active = Time.now
 started = false
 
-def get_fortune
-  `/usr/bin/fortune`
+def fortune(prefix='')
+  prefix+`/usr/bin/fortune`
 end
 
-command(:fortune,:description => 'get a fortune') { get_fortune() }
+command(:fortune,:description => 'get a fortune') { fortune }
 
-subscribe :join do |bot|
-  bot.timer.add_timer(:timestamp=>Time.now + 2, :requestor=>'fortune_plugin_join') { started = true }
+on :join do |bot|
+  timer(2) { started = true }
 end
 
-subscribe :welcome do |bot,message|
-  if (rand(@config_memo[:random]) < 1)
-    bot.send(:text => "Welcome %s! Here have a fortune:\n%s" % [bot.sender(message),get_fortune]) if started
+on :welcome do |bot,message|
+  if (started && rand(config[:random]) < 1)
+    send(:text => fortune("Welcome %s! Here have a fortune:\n" % bot.sender(message)))
   end
 end
 
-subscribe :firehose do |bot,message|
-  if (!(bot.sender(message) == bot.config[:name]) && started)
-    forcedevent = Time.now + @config_memo[:timer_push]
-  end
-end
-
-subscribe :give_fortune do |bot|
-  forcedevent = Time.now + @config_memo[:timer_push] if forcedevent.nil?
-  bot.timer.add_timer(:timestamp=>Time.now + 15, :requestor=>'fortune_plugin_idle') {
-    if (forcedevent <= Time.now)
-      # push the forced event out again but make it twice as long
-      forcedevent = Time.now + 2*@config_memo[:timer_push]
-      bot.send(:text=>"It's been quiet too long.  I think we need a fortune to liven things up!\n\n%s" % [get_fortune])
-    end
-    publish(:give_fortune, bot)
-  }
+on :firehose do |bot,message|
+  last_active = Time.now if started && bot.sender(message) != bot.config[:name]
 end
 
 init do
-  config()
   # just give our random welcome fortune a small chance
   # can be set in config yaml
-  @config_memo[:random] ||= 3
-  @config_memo[:timer_push] ||= 5400 # 90 minutes
-  publish(:give_fortune, bot)
+  config[:random] ||= 3
+
+  # number of seconds to wait between messages before spewing a fotune
+  config[:timer_push] ||= 5400 # 90 minutes
+  last_sent = 0
+
+  (check = Proc.new { 
+    if last_sent.to_i < last_active.to_i && Time.now-last_active >= config[:timer_push]
+      send :text=>fortune("It's been quiet too long.  I think we need a fortune to liven things up!\n\n") rescue error
+      last_sent = Time.now
+    end
+    timer(1, &check)
+  }).call
 end
+

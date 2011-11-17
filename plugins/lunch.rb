@@ -1,5 +1,5 @@
 def data
- data_load_yaml || [] 
+ load_data || [] 
 end
 
 command(:lunch,
@@ -23,7 +23,7 @@ command('add lunch',
   :description => 'add a lunch location to the options'
 ) do |message, location|
   locations = data
-  data_save_yaml(locations << location.strip) unless locations.include?(location.strip)
+  save_data(locations << location.strip) unless locations.include?(location.strip)
 end
 
 command('delete lunch',
@@ -32,5 +32,5 @@ command('delete lunch',
   :description => 'delete a lunch location from the options'
 ) do |message, location|
   locations = data
-  data_save_yaml(locations) if locations.delete(location.strip) 
+  save_data(locations) if locations.delete(location.strip) 
 end

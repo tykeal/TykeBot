@@ -12,7 +12,7 @@ class PubSub
   end
 
   # sign up to receive events
-  def subscribe(name,&callback)
+  def on(name,&callback)
     (@subscribers[name]||=[]) << callback
   end
 
@@ -42,7 +42,7 @@ class PubSub
 
 private
  
-  # call the subscriber's callback with published params
+  # call the onr's callback with published params
   # and trap errors aggressively.  For now we just log.
   def dispatch(params,callback)
     begin

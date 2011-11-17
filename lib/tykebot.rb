@@ -129,15 +129,13 @@ class TykeBot
       @plugins=[]
       @commands = []
       @inits=[]
-      @timer=CronTimer.new()
-
       @pubsub = PubSub.new(:start_publisher=>true)
+      @timer=CronTimer.new
     end
 
     # all-in-one helper for default behaviour
-    def discover_load_and_init_plugins
+    def discover_and_load_plugins
       load_plugins(discover_plugins)
-      init_plugins
     end
 
     # Look in the file system in the dirs specified in the config or default to 'plugins/'
@@ -186,6 +184,7 @@ class TykeBot
           error("failed initialing plugin: %s",plugin.name,$!)
         end
       end
+      @inits.clear # only do once!
     end
 
     # connect the bot, join the room, and join the pubsub thread
@@ -196,6 +195,7 @@ class TykeBot
           unless connected?
             connect
             join if config[:room]
+            init_plugins
           end
           @pubsub.join(check_connection_every_n_seconds)
         rescue
@@ -386,7 +386,7 @@ class TykeBot
 
     def add_command(command)
       @commands << command
-      subscribe(:command){|bot,message| command.message(bot,message) if command.public? || master?(message)}
+      on(:command){|bot,message| command.message(bot,message) if command.public? || master?(message)}
     end
 
     def delay_message?(message)
@@ -401,8 +401,8 @@ class TykeBot
       @pubsub.publish(name,*params)
     end
 
-    def subscribe(name,&callback)
-      @pubsub.subscribe(name,&callback)
+    def on(name,&callback)
+      @pubsub.on(name,&callback)
     end
 
 private

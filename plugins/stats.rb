@@ -6,7 +6,7 @@ command(:stats,
   action = (action || 'show').strip
   case action
   when 'clear'
-    data_save_yaml({})
+    save_data({})
     stats = {}
   when 'show'
     bot.commands(!bot.master?(message)).sort.map{|cmd| "%s=%d" % [cmd.name,stats[cmd.name]||0]}.join("\n")
@@ -15,14 +15,14 @@ command(:stats,
   end
 end
 
-subscribe :command_match do |cmd,*params|
+on :command_match do |cmd,*params|
   stats[cmd.name] ||= 0
   stats[cmd.name] += 1
-  data_save_yaml(stats)
+  save_data(stats)
 end
 
 init do 
   commands = bot.commands
-  (data_load_yaml||{}).each{|name,count| 
+  (load_data||{}).each{|name,count| 
     stats[name] = count.to_i if commands.detect{|cmd| cmd.name.to_s==name.to_s }}
 end

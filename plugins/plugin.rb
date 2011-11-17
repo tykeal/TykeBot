@@ -1,5 +1,5 @@
 def save
-  data_save_yaml(
+  save_data(
     bot.plugins.select{|p| !p.enabled}.inject({}){|h,p| h[p.name]=false; h})
 end
 
@@ -47,7 +47,7 @@ end
 
 init do
   plugin_hash=bot.plugins.inject({}){|h,p| h[p.name]=p; h}
-  (data_load_yaml||{}).each do |plugin_name,state|
+  (load_data||{}).each do |plugin_name,state|
     plugin_hash[plugin_name].enable(state) if plugin_hash[plugin_name]
   end
 end
