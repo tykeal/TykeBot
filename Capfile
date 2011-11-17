@@ -25,14 +25,14 @@ ssh_options[:forward_agent] = false
 
 set :deploy_to, "/home/#{user}/deploy/#{application}"
 set :shared_children, fetch(:shared_children) + [ "config", "log", "data" ]
-set :template_files, ['startup/botservice.sh']
+set :template_files, ['scripts/botservice.sh']
 
 set (:local_version) { `cat .git/refs/heads/#{branch rescue 'master'}`.strip }
 
 namespace :deploy do
   [:start, :stop, :restart].each do |t|
     task t do
-      run "#{current_path}/startup/botservice.sh #{t}"
+      run "#{current_path}/scripts/botservice.sh #{t}"
     end
   end
 
