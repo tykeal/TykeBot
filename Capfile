@@ -15,8 +15,8 @@ default_run_options[:pty] = false
 set :use_sudo, false
 set :scm, :git
 set :remote, 'origin'
-set :deploy_via, :copy
-set :repository, '.'
+set :deploy_via, :remote_cache
+set :repository, 'git://github.com/tykeal/TykeBot.git'
 # Force the deploys to always go as the tykebot user
 set :user, variables[:user].nil? ? 'tykebot' : variables[:user]
 set :copy_exclude, [".git/*", ".git*", "Capfile", "config/deploy"]
@@ -25,14 +25,14 @@ ssh_options[:forward_agent] = false
 
 set :deploy_to, "/home/#{user}/deploy/#{application}"
 set :shared_children, fetch(:shared_children) + [ "config", "log", "data" ]
-set :template_files, ['startup/botservice.sh']
+set :template_files, ['scripts/botservice.sh']
 
 set (:local_version) { `cat .git/refs/heads/#{branch rescue 'master'}`.strip }
 
 namespace :deploy do
   [:start, :stop, :restart].each do |t|
     task t do
-      run "#{current_path}/startup/botservice.sh #{t}"
+      run "#{current_path}/scripts/botservice.sh #{t}"
     end
   end
 
