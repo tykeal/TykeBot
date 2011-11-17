@@ -1,9 +1,9 @@
 require 'json'
 
-WIKI_URL = "http://www.dinegerous.com/search/"
+DINEGEROUS_URL = "http://www.dinegerous.com/search/"
 
 def dinegerous_search(q,limit)
-  output = http_get(WIKI_URL+CGI.escape(q)+"?limit=#{limit}").body
+  output = http_get(DINEGEROUS_URL+CGI.escape(q)+"?limit=#{limit}").body
   jsons = JSON.parse(output)
 
   jsons.map{|json|
