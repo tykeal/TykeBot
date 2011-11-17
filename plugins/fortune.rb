@@ -35,7 +35,7 @@ init do
       send :text=>fortune("It's been quiet too long.  I think we need a fortune to liven things up!\n\n") rescue error
       last_sent = Time.now
     end
-    timer(1, &check)
+    timer(600, &check)
   }).call
 end
 
