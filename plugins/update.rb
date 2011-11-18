@@ -5,5 +5,5 @@ command(:update, :description => 'Make bot update to the latest revision', :is_p
 }
 
 init do
-  config[:update_script] || = '~/deploy/tykebot/current/scripts/run_update.sh'
+  config[:update_script] ||= '~/deploy/tykebot/current/scripts/run_update.sh'
 end
