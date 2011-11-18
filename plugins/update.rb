@@ -17,13 +17,6 @@ add_command(
   end
 end
 
-on :firehose do |bot,message|
-#  if bot.sender(message) == 'github-services@jabber.org'
-#    puts message
-#  end
-  puts "received stanza:\n" + bot.sender(message)
-end
-
 init do
   config[:update_script] ||= '~/deploy/tykebot/current/scripts/run_update.sh'
 end
