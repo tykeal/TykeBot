@@ -3,6 +3,7 @@ def updatescript
 end
 
 command(:update, :description => 'Make bot update to the latest revision', :is_public => false) {
+  bot.send(:text=>"One of my masters told me I need an update.  So I'm gonna just do that right now...")
   updatescript
 }
 
