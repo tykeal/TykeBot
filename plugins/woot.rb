@@ -12,7 +12,7 @@ def woot()
   title = output.search("div.productDescription").search("h2").text
   price = output.search("div.productDescription").search("h3").text
   link = output.search("div.productDescription").search("h5 a")[0].attributes["href"] ? output.search("div.productDescription").search("h5 a")[0].attributes["href"].value : "sold out!"
-  last_woot = title+" "+price+"\n"+link
+  last_woot = title+" "+price+"\n"+"Buy Now: "+link
 end
 
 command(:woot,:description => 'Get the current woot item') { woot }
