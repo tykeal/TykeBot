@@ -32,10 +32,14 @@ command(:wootoff,:required=>[:state],:description => 'For private chat. start/st
 init do
   woot_watchers=load_data||[]
   (check = Proc.new {
+    puts Time.now.to_s
     past_woot=last_woot.to_s.clone
+    puts past_woot
     if  woot_watchers.size>0
       last_woot =  woot() 
+      puts last_woot
       if(past_woot!=last_woot)
+        puts woot_watchers.join(":")
         send :to=>woot_watchers.uniq, :text=>("New Woot!\n"+last_woot) rescue error
       end
     end
