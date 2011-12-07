@@ -1,29 +1,32 @@
-command(:help, 
-  :description=>'Display help for the given command, or all commands if no command is specified',
-  :alias=>'?',
-  :optional=>:command
-) do |message, cmd|
+command do
+  aliases '?'
+  description 'Display help information.'
 
-  # Returns the default help message describing the bot's command repertoire.
-  # Commands are sorted alphabetically by name, and are displayed according
-  # to the bot's and the commands's _public_ attribute.
-  command_name = cmd.to_s.strip
-  master = bot.master?(message)
-  commands = bot.commands(!master)
-  if command_name.length == 0
-    # Display help for all commands
+  action :description=>'list all commands' do |message|
     "I understand the following commands:\n" +
-      commands.sort.map do |command|
-        "  %s - %s" % [command.name,command.description]
-      end.join("\n")
-  else
-    # Display help for the given command
-    if command = commands.detect{|cmd| cmd.name==command_name}
-      command.syntax.join("\n") + "\n  #{command.description}"
+      commands(message).sort.map{|command|
+        "  %s - %s" % [command.names.join("|"),command.description]}.join("\n")
+  end
+
+  action :required=>:command_name, 
+    :description=>'show usage for the specified command' do |message,command_name|
+    if command = commands.detect{|cmd| cmd.names.map(&:to_s).include?(command_name)}
+      "#{command.names.join("|")} - #{command.description}\nUsage:\n" + 
+        actions(message,command).map{ |a| syntax(command,a) }.join("\n")
     else
-       "I don't understand '#{command_name}' Try saying" +
-          " 'help' to see what commands I understand."
+       "unknown command #{command_name}."
     end
   end
 end
 
+helper :commands do |message|
+  bot.commands(!bot.master?(message))
+end
+
+helper :actions do |message,command|
+  command.actions.select{|a|a.public?||bot.master?(message)}
+end
+
+helper :syntax do |c,a|
+  "%s%s%s" % [c.name,a.name? ? " #{a}" : a,a.description ? " - #{a.description}" : '']
+end

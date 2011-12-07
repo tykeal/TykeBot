@@ -1,1 +1,4 @@
-command(:sting,:description => 'Textually perform a percussive sting') { "ba dum tsh" }
+command do
+  description 'Textually perform a percussive sting.'
+  action{ "ba dum tsh" }
+end

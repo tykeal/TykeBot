@@ -1,107 +1,146 @@
+# command object
+#
+# command :foo do |cmd|
+#   cmd.action do |msg|
+#     # impl, block value is used for response
+#     # ...
+#   end
+# end
 class Command
-  attr_reader :name, :plugin, :syntax, :description
-  attr_accessor :enabled
+  attr_reader :plugin
+  attr_accessor :enabled, :description, :actions, :names
+  
+  class Action
+    attr_reader :names, :syntax, :regex, :description, :callback, :required, :optional
 
-    # Commands consist of a metadata Hash and a callback block. The metadata
-    # Hash *must* contain the command +syntax+, a +description+ for display with
-    # the builtin 'help' command, and a regular expression (+regex+) to detect
-    # the presence of the command in an incoming message.
-    #
-    # The command parameter(s) will be parsed from group(s) (text between
-    # parenthesis) in the +regex+. If there's none, one, or more than one
-    # occurrence, the callback block will receive respectively nil, a String,
-    # or an Array.
-    # e.g. With a command defined like this: /^cmd\s+(.+)\s+(.+)\s+(.+)$/,
-    # writing "cmd foo bar 42" will send ["foo", "bar", "42"] to the callback
-    # block.
-    #
-    # The metadata Hash may optionally contain an array of command aliases. An
-    # +alias+ consists of an alias +syntax+ and +regex+. Aliases allow the bot
-    # to understand command shorthands. For example, the default 'help' command
-    # has an alias '?'. Saying either 'help' or '?' will trigger the same
-    # command callback block.
-    #
-    # The metadata Hash may optionally contain a +is_public+ flag, indicating
-    # the bot should respond to *anyone* issuing the command, not just the bot
-    # master(s). Public commands are only truly public if the bot itself has
-    # been made public.
-    #
-    # The specified callback block will be triggered when the bot receives a
-    # message that matches the given command regex (or an alias regex). The
-    # callback block will have access to the raw message and the parameter(s) (not
-    # including the command itself), and should either return a String response
-    # or +nil+. If a callback block returns a String response, the response will
-    # be delivered to the Jabber id that issued the command.
-    #
     # Examples:
-    #
-    #   # Say 'puts foo' or 'p foo' and 'foo' will be written to $stdout.
-    #   # The bot will also respond with "'foo' written to $stdout."
-    #   Command.new(
-    #     :syntax      => 'puts <string>',
-    #     :description => 'Write something to $stdout',
-    #     :regex       => /^puts\s+(.+)$/,
-    #     :alias       => [ :syntax => 'p <string>', :regex => /^p\s+(.+)$/ ]
-    #   ) do |message, msg|
-    #     puts "#{bot.sender(message)} says #{msg}."
-    #     "'#{msg}' written to $stdout."
-    #   end
-    #
-    #   # 'puts!' is a non-responding version of 'puts', and has two aliases,
-    #   # 'p!' and '!'
-    #   Command.new(
-    #     :syntax      => 'puts! <string>',
-    #     :description => 'Write something to $stdout (without response)',
-    #     :regex       => /^puts!\s+(.+)$/,
-    #     :alias       => [ 
-    #       { :syntax => 'p! <string>', :regex => /^p!\s+(.+)$/ },
-    #       { :syntax => '! <string>', :regex => /^!\s+(.+)$/ }
-    #     ]
-    #   ) do |message, msg|
-    #     puts "#{bot.sender(message)} says #{msg}."
-    #     nil
-    #   end
-    #
-    #  # 'rand' is a public command that produces a random number from 0 to 10
-    #  Command.new(
-    #   :syntax      => 'rand',
-    #   :description => 'Produce a random number from 0 to 10',
-    #   :regex       => /^rand$/,
-    #   :is_public   => true
-    #  ) { rand(10).to_s }
-    #
-  def initialize(options,&callback)
-    [:regex,:syntax].each do |key|
-      raise ArgumentError, "#{key} is required" unless options[key]
+    def initialize(options={},&callback)
+      @names = Array(options[:name])
+      @is_public = options.has_key?(:is_public) ? options[:is_public] : true
+      @enabled = options.has_key?(:enabled) ? options[:enabled] : true
+      @html = options[:html]
+      @callback = callback
+      @description = options[:description]
+      @required = Array(options[:required])
+      @optional = Array(options[:optional])
+      @default = options[:default]
+      @regex = options[:regex] # raw/advanced
     end
-    @syntax = Array(options[:syntax])
-    @name = options[:name] || command_name(@syntax.first)
-    @regex = Array(options[:regex])
-    # aliases
-    Array(options[:alias]).each do |a| 
-      @regex << a[:regex] 
-      @syntax << a[:syntax]
+
+    def name; @names.first ; end
+    def name?; !@names.empty?; end
+    def public? ; @is_public ; end
+    def html? ; @html; end
+    def enabled? ; @enabled ; end
+    def default? ; @default || @names.empty?; end
+
+    def to_s
+      action = names.join('|')
+      action = "(#{action})" if names.size > 1
+      action = "[#{action}]" if name? && default?
+      "#{action}#{required.map{|r|" <#{r}>"}.join}#{optional.map{|o| " [<#{o}>]"}.join}"
     end
-    @is_public = options.has_key?(:is_public) ? options[:is_public] : true
-    @html = options[:html]
-    @enabled = options.has_key?(:enabled) ? options[:enabled] : true
-    @plugin = options[:plugin]
-    @callback = callback
+
+    # TODO: support quoted and getopt -s --long arguments!
+    # /(\s+.*?)$/                    # no name: captures start at 0
+    # /(\s+(name))?(\s+.*?)$/        # default: captures start at 1
+    # /(\s+(name1|name2|...))?\s*$/  # default, aliased: captures start at 1
+    def regex
+      params = "#{required.map{'\s+(.*?)'}.join}#{optional.map{'(\s+.*?)?'}.join}"
+      action = self.names.map{|name| Regexp::quote(name.to_s)}.join("|")
+      action = "(\\s+(#{action}))" if name?
+      action = action + "?" if default? && name?
+      Regexp.new("#{action}#{params}")
+    end
+    
+    def args(match,first=0,last=-1)
+      first += (name? ? 2 : 0)
+      match.captures[first..last].map{|s| s ? s.strip : nil}
+    end
+
+    def act(args,message)
+      # add in the message as the first arg if block is expecting it
+      if @callback.arity == required.size + optional.size + 1
+        logger.debug("ACTION: calling with message + args!")
+        @callback.call(message,*args)
+      else
+        logger.debug("ACTION: calling with no message, just args!")
+        @callback.call(*args)
+      end
+    end
+
+    # non-default < default, higher required < lower, higher optional < lower
+    def <=>(other)
+      [self.default? ? 1 : 0, self.name? ? 0 : 1, -self.required.size, -self.optional.size] <=>
+        [other.default? ? 1 : 0, other.name? ? 0 : 1, -other.required.size, -other.optional.size]
+    end
+ 
+    def masks?(other)
+      # share a name and same number of required params
+      (self.names & other.names).size > 0 && 
+        (self.required.size == other.required.size || 
+        (self.required.size+self.optional.size) == (other.required.size+other.optional.size))
+    end
+
+  end
+
+  def initialize(options,&block)
     @description = options[:description] 
+    @html = options[:html] 
+    @actions = []
+    @names = Array(options[:name]).map(&:to_s)
+    @is_public = options.has_key?(:is_public) ? options[:is_public] : true
+    @enabled = options.has_key?(:enabled) ? options[:enabled] : true
+    yield(self) if block
   end
 
   def public? ; @is_public ; end
   def enabled? ; @enabled ; end
+  def name; @names.first; end
+  
+  def aliases(*args)
+    @names |= args.map(&:to_s)
+  end
+
+  # add an action to this command
+  # you can have override action names... aka diff actions with same name but diff arity
+  def action(options,&callback)
+    new_action = Action===options ? options : Action.new(options,&callback)
+    # replace any with (shared name/alias or both default) + same arity
+    actions.delete_if do |existing_action|
+      ((existing_action.names & new_action.names).size > 0 ||
+          existing_action.default? && new_action.default?) &&
+        existing_action.required.size == new_action.required.size &&
+        existing_action.optional.size <= new_action.optional.size
+    end
+    @actions = (@actions + [new_action]).sort
+    new_action
+  end
+  
+  # matches actions in order of arity, with default ones checked last
+  def match(chat_text,master=nil)
+    actions.select{|a| master || a.public?}.sort.each do |a|
+      logger.debug("COMMAND: #{names.inspect} #{a} #{a.regex.inspect}")
+      if params = action_match?(a,chat_text)
+        logger.debug("COMMAND: #{names.inspect} #{a} matched with params #{params.inspect}")
+        return [a,params] # stop at first action match
+      end
+    end
+    # no matching commands found
+    return nil
+  end
 
   def message(bot,message)
-    if m = @regex.map{|r| message.body.match(r)}.compact.first
+    a,args = match(message.body,bot.master?(message))
+    if a
       sender = bot.sender(message)
-      bot.publish(:command_match,self,sender,message,m.captures)
-      if response = @callback.call(message,*m.captures) 
-        to = sender unless bot.groupchat?(message) 
-        if @html
+      bot.publish(:command_match,self,sender,message,args)
+      if response = a.act(args, message)
+        logger.debug("COMMAND: #{names.join("|")} sending response: #{response}")
+        to = sender unless message.group_chat?
+        if a.html?
           html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge(:output=>:xhtml))
-          debug("sanitized html: #{html}")
+          logger.debug("COMMAND: sanitized html: #{html}")
           bot.send(:xhtml=>html,:to=>to)
         else
           bot.send(:text=>response,:to=>to)
@@ -114,15 +153,22 @@ class Command
     self.name <=> other.name
   end
 
-  private
+private
 
-    # Extract the command name from the given syntax
-    def command_name(syntax) #:nodoc:
-      if syntax.include? ' '
-        syntax.sub(/^(\S+).*/, '\1')
-      else
-        syntax
+  # returns args if match, nil otherwise
+  def action_match?(a,s)
+    names.each do |name|
+      # TODO: allow mid chat matching
+      if match = s.match(regex(name,a))
+        return a.args(match)
       end
     end
+    return nil
+  end
+
+  def regex(name,a)
+    base = "^#{Regexp::quote(name.to_s)}"
+    Regexp.new "#{base}#{a.regex.source}\\s*$"
+  end
 
 end

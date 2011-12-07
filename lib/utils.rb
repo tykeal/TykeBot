@@ -1,3 +1,4 @@
+require 'logger'
 require 'net/http'
 require 'net/https'
 require 'cgi'
@@ -6,30 +7,65 @@ def h(s)
   CGI::escapeHTML(s)
 end
 
-def debug(s,*args)
-  Jabber::debuglog(args.empty? ? s : s % args)
-end
+# todo replace with a decent logging system.
+class StupidLogger
+  def initialize
+    @logger = Logger.new(STDOUT)
+    @logger.level = Logger::DEBUG
+    @logger.progname = "BOT"
+    @logger.formatter = lambda{|severity,time,progname,msg| "%s [%s] %5s: %s\n" % [time.strftime("%Y-%m-%d %H:%M:%S"), progname, severity, msg.to_s]}
+  end
 
-def warn(s,*args)
-  Jabber::warnlog(args.empty? ? s : s % args)
-end
+  def level=(l)
+    @logger.level=l
+  end
+ 
+  def info(*args)
+    @logger.info format(args)
+  end
 
-# last arg must be the exception to log backtrace
-# valid calls:
-# error("string")
-# error("string %s",'arg')
-# error($!)
-# error("string",$!)
-# error("string %s",'arg1',...,$!)
-def error(*args)
- e=args.pop||$!
- if e.respond_to? :backtrace
-   s=(args.first ? (args.first % args[1..-1]) + ' ' : '')
-   warn("ERROR: %s%s %s", s, e, e.backtrace.join("\n"))
- else
-   warn("ERROR: %s",e,*args)
+  def debug(*args)
+    @logger.debug format(args)
+  end
+
+  def warn(*args)
+    @logger.warn format(args)
+  end
+
+  # last arg must be the exception to log backtrace
+  # valid calls:
+  # error
+  # error("string")
+  # error("string %s",'arg')
+  # error($!)
+  # error("string",$!)
+  # error("string %s",'arg1',...,$!)
+  def error(*args)
+    # check last arg if backtrace, then check $!, else just go as normal
+    e=args.last||$!
+    if e.respond_to? :backtrace
+      @logger.error "%s%s\n%s" % [format(args[0..-2]), " " + e, e.backtrace.join("\n")]
+    else
+      @logger.error format(args)
+    end
+  end
+
+private
+  def format(args)
+    case args.size
+    when 0 then ''
+    when 1 then args.first
+    else args.first % args[1..-1]
+    end
   end
 end
+
+BOTLOGGER = StupidLogger.new
+def logger; BOTLOGGER; end
+def debug(*args); logger.debug(*args); end
+def info(*args); logger.info(*args); end
+def warn(*args); logger.warn(*args); end
+def error(*args); logger.error(*args); end
 
 def symbolize_keys(hash)
   hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}

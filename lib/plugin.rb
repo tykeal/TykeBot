@@ -4,7 +4,7 @@ class Plugin
   attr_reader :bot, :name, :enabled, :file, :commands
 
   def_delegators :@bot, :publish, :on, :send
-
+  
   def initialize(bot,file)
     @bot=bot
     @file=file
@@ -12,36 +12,83 @@ class Plugin
     @name=parse_name(file)
     @enabled=true
     @commands = []
+    @configs = []
   end
 
+  # DSL helper function to require files from the plugins dir
   def plugin_require(filename)
     Kernel.require(File.join(@dir,filename))
   end
-
-  #
-  # :description=>string        #
-  # :alias=>[]                  # of strings
-  # :is_public, :html, :enable  # bool flags
-  #
-  def command(name,options={},&block)
-    cmd={}
-    cmd[:name] = name.to_s
-    ([cmd[:name]] + Array(options[:alias])).each do |name|
-      (cmd[:regex]||=[]) << command_regex(name,options[:required],options[:optional])
-      (cmd[:syntax]||=[]) << command_syntax(name,options[:required],options[:optional])
-    end
-    cmd[:description] = options[:description]
-    cmd[:is_public] = options.has_key?(:is_public) ? options[:is_public] : true
-    cmd[:html] = options[:html]
-    cmd[:enabled] = options.has_key?(:enabled) ? options[:enabled] : true
-    add_command(cmd,&block)
+ 
+  # DSL helper function to calc an int in range of min,max with default value if nil
+  # params:
+  # n, a number or string or null
+  # options:
+  # :min=>i      (defaults to 1)
+  # :max=>i      (defaults to 5)
+  # :default=>i  (defaults to :min)
+  def bound(n,options={})
+    min=(options[:min]||1).to_i
+    max=(options[:max]||5).to_i
+    default=(options[:default]||min).to_i
+    [[(n||default).to_i,min].max,max].min
   end
 
-  # advanced
-  def add_command(options,&block)
-    command = Command.new({:plugin=>self}.merge(options),&block)
-    @commands << command
-    bot.add_command(command)
+  # DSL to declare a command for this plugin
+  # params:
+  # [optional] name             # defaults to plugin name
+  # [optional] options:
+  # :description=>string        # 
+  # :is_public, :html, :enable  # bool flags
+  def command(*args,&block)
+    return @working_command if @working_command
+    name, options = _parse_name_and_options(args,self.name)
+    @working_command = cmd = Command.new({:plugin=>self}.merge(options.merge(:name=>name)))
+    yield(cmd) if block
+    bot.add_command(cmd)
+    @working_command=nil 
+    cmd
+  end
+
+  # set working command description
+  def description(s)
+    command.description = s
+  end
+
+  # add alias to working command 
+  def aliases(s)
+    command.aliases(s)
+  end
+
+  # add action to workgin command
+  def action(*args,&block)
+    name, options = _parse_name_and_options(args)
+    command.action(options.merge(:name=>name),&block)
+  end
+
+  # resource() do ...
+  # resource(name) do ...
+  # resource(name,options) do ...
+  # resource(options) do ...
+  # resource(options) do ...
+  def resource(*args,&block)
+    command(*args) do |cmd|
+      # add resource actions
+      # TODO: Figure out override/mod/new default action...
+      cmd.action(:name=>:sample,:default=>true) { (load_data||[]).sample }
+      cmd.action(:name=>:list) { (load_data||[]).map{|l| l.to_s}.join("\n")}
+      cmd.action(:name=>[:add,'+'],:required=>:d) {|msg,d| save_data( (load_data||[]) | [d] )}
+      cmd.action(:name=>[:delete,:del,'-'],:required=>:d) {|msg,d| debug("RESOURCE: - #{load_data.inspect} d: #{d.inspect}"); save_data( (load_data||[]) - [d] )}
+
+      # now run as normal
+      block.call(cmd) if block
+    end
+  end
+
+  # warns if you override a plugin instance method
+  def helper(name,&block)
+    warn("Helper attempted to override existing method: #{name} in plugin #{self.name}") if self.methods.include?(name.to_s)
+    (class << self; self; end).instance_eval{define_method(name,&block)}
   end
 
   def data_file(filename=nil)
@@ -77,9 +124,48 @@ class Plugin
     end
   end
 
-  def config
+  class Config
+    def initialize(hash)
+      @config = hash
+      @wrappers = {}
+    end
+    def [](key)
+      raise("Undefined configuration name #{key}.  Please declare your configuration options using the config() helper.") unless @wrappers[key]
+      @wrappers[key].call
+    end
+    def _wrappers
+      @wrappers
+    end
+    def _wrap(key, options={}, &block)
+      raise("Illegal configuration name #{key}.  Please choose another name.") if methods.include?(key.to_s)
+      method = lambda do
+        value = @config[key]||options[:default]
+        if block
+          args = block.arity > 0 ? [value, @config[key], options[:default]][0..(block.arity)] : []
+          block.call(*args)
+        else
+          value
+        end
+      end
+      (class << self; self; end).instance_eval{ define_method(key,&method) }
+      @wrappers[key] = method
+    end
+  end
+
+  def config(*args, &block)
     # memoize
-    @config_memo ||= symbolize_keys(load_config)
+    @config_memo ||= Config.new(symbolize_keys(load_config))
+    name,options = _parse_name_and_options(args)
+    if name
+      @config_memo._wrap(name,options,&block)
+      self
+    else
+      @config_memo  
+    end
+  end
+
+  def config_options()
+    config._wrappers      
   end
 
   def init(&block)
@@ -109,6 +195,19 @@ class Plugin
   end
   
 private
+
+  def _parse_name_and_options(args,name=nil)
+    options = {}
+    args.each do |arg|
+      case arg
+      when Hash
+        options = arg
+      when String, Symbol
+        name = arg
+      end
+    end
+    [name,options]
+  end
 
   def load_config
     # look in bot config

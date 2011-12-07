@@ -121,7 +121,8 @@ class TykeBot
         @config[:name] = @config[:jabber_id].sub(/@.+$/, '')
       end
 
-      Jabber.debug = @config[:debug] || false
+      Jabber.debug = @config[:jabber_debug] || false
+      logger.level = @config[:debug] ? Logger::DEBUG : Logger::INFO
 
       # Default to asking about unknown commands.
       @config[:misunderstood_message] = @config[:misunderstood_message].nil? ? true : @config[:misunderstood_message]
@@ -131,6 +132,11 @@ class TykeBot
       @inits=[]
       @pubsub = PubSub.new(:start_publisher=>true)
       @timer=CronTimer.new
+    end
+
+    # used for room nick
+    def name
+      config[:name]
     end
 
     # all-in-one helper for default behaviour
@@ -144,7 +150,7 @@ class TykeBot
       plugins={}
       blacklist=(config[:blacklist_plugins]||[]).map(&:to_s)
       plugin_dirs=config[:plugin_dirs]||['plugins']
-      debug("auto discovering plugins: dirs: #{plugin_dirs.inspect} blacklist: #{blacklist.inspect}")
+      logger.debug("auto discovering plugins: dirs: #{plugin_dirs.inspect} blacklist: #{blacklist.inspect}")
       (config[:plugin_dirs]||['plugins']).map{|dir| Dir.glob(File.join(dir,'*.rb')) + Dir.glob(File.join(dir,'*','init.rb'))}.flatten.compact.uniq.map do |f|
         p=Plugin.new(self,f)
         unless blacklist.include?(p.name)
@@ -158,11 +164,11 @@ class TykeBot
     def load_plugins(plugins)
       plugins.each do |plugin|
         begin
-          debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
+          logger.debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
           DynamicLoader.new{plugin}.load(plugin.file)
           @plugins << plugin
         rescue
-          error("failed to load plugin:",$!)
+          logger.error("failed to load plugin:",$!)
           exit if config[:exit_on_load_error]
         end
       end
@@ -170,7 +176,7 @@ class TykeBot
 
     # a one time callback after plugins are loaded and bot is connected/ready
     def add_plugin_init(plugin,&block)
-      debug("adding plugin %s to init list",plugin.name)
+      logger.debug("adding plugin %s to init list",plugin.name)
       @inits << [plugin,block]
     end
 
@@ -178,10 +184,10 @@ class TykeBot
     def init_plugins
       @inits.each do |plugin,callback|
         begin
-          debug("initializing plugin #{plugin.name}")
+          logger.debug("initializing plugin #{plugin.name}")
           callback.call(plugin)
         rescue
-          error("failed initialing plugin: %s",plugin.name,$!)
+          logger.error("failed initialing plugin: %s",plugin.name,$!)
         end
       end
       @inits.clear # only do once!
@@ -197,9 +203,10 @@ class TykeBot
             join if config[:room]
             init_plugins
           end
+          logger.debug("joining pubsub thread...")
           @pubsub.join(check_connection_every_n_seconds)
         rescue
-          error
+          logger.error
         end
       end 
     end
@@ -209,9 +216,11 @@ class TykeBot
     # configuration setting.
     def connect
       jid = Jabber::JID.new(@config[:jabber_id])
+      logger.info("Connecting as %s...",jid)
       begin
         @jabber = Jabber::Framework::Bot.new(jid, @config[:password])
         if connected?
+          logger.info("Connected.")
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
@@ -220,9 +229,7 @@ class TykeBot
           end
         end
       rescue Exception => e
-        # Do nothing
-        # AKA eat the baby right now
-        puts e.message
+        logger.error(e)
       end
     end
 
@@ -237,6 +244,7 @@ class TykeBot
       room = @config[:room]
 
       jid = Jabber::JID.new("#{room}@conference.#{serv}/#{nick}")
+      logger.info("Joining room %s",jid)
 
       # We need a connection or else we'll blow up
       if connected?
@@ -411,9 +419,9 @@ private
       (message.body && 
       !delay_message?(message)) && 
         ((message.type == :chat &&
-          sender(message) != @config[:name]) ||
+          sender(message) != name) ||
         (message.type == :groupchat &&
-          sender(message) != @config[:name] &&
+          sender(message) != name &&
           strip_prefix(message.body)))
     end
 

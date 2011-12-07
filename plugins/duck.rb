@@ -1,15 +1,20 @@
-require 'json'
+config :url,:default=>"http://api.duckduckgo.com/?q=!ducky+%s&format=json&no_redirect=1",:description=>'URL of the duckduckgo.com search api'
 
-DUCK_URL = "http://api.duckduckgo.com/?q=!ducky+%s&format=json&no_redirect=1"
+command do
+  description "Lookup info using duckduckgo.com"
 
-# We should have something better than this
-def remove_invalid_markup(s)
-  s.gsub("<body.*>", "").gsub("<html.*>", "").gsub("</body>", "").gsub("</html>", "").gsub("&amp;", "&").gsub("&nbsp;", " ")
+  action(:required=>:q,:html=>true) do |message,q|
+    begin
+      search(q)
+    rescue
+      error
+      "Something went awry..."
+    end
+  end
 end
 
-def search(q)
-  output = http_get(DUCK_URL % CGI.escape(q)).body
-  json = JSON.parse(output)
+helper :search do |q|
+  json = JSON.parse(http_get(config.url % CGI.escape(q)).body)
   abstract = json['AbstractText']
   result = abstract ? abstract + "<br/>" : ""
   related_topics = json['RelatedTopics']
@@ -19,18 +24,4 @@ def search(q)
   end
   result += (redirect ? redirect + "<br/>" : "") + 
   			(summary ? summary.to_s : "")
-  remove_invalid_markup(result)
-end
-
-command(:duck, 
-  :required=>:q,
-  :description => "Lookup info using duckduckgo.com",
-  :html => true
-) do |message,q|
-  begin
-    search(q)
-  rescue
-    error
-    "Something went awry..."
-  end
 end

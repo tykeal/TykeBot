@@ -1,4 +1,6 @@
-command(:fail,:description => 'Produces a whale', :html=>true) {
+command do
+  description 'Produces a whale'
+  action(:html=>true) do
 '
       <p style="font-family:Andale Mono,Menlo">
 
@@ -11,6 +13,5 @@ command(:fail,:description => 'Produces a whale', :html=>true) {
 <br/>
       </p>
 '
-}
-
-
+  end
+end
