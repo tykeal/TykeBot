@@ -37,6 +37,7 @@ command(:wootoff,:required=>[:state],:description => 'For private chat. start/st
 init do
   woot_watchers=load_data||[]
   (check = Proc.new {
+    past_woot=last_woot.to_s.clone
     if  woot_watchers.size>0
       current =  woot() 
       last_woot = current if current
