@@ -7,12 +7,17 @@ is_woot_off = false
 woot_watchers = []
 
 def woot()
-  output =Nokogiri::HTML( http_get('http://www.woot.com/').body)
-  is_woot_off = output.search("img").select{|i| i.attributes["src"].value =~ /woot-off/}.size > 0
-  title = output.search("div.productDescription").search("h2").text
-  price = output.search("div.productDescription").search("h3").text
-  link = output.search("div.productDescription").search("h5 a")[0].attributes["href"] ? output.search("div.productDescription").search("h5 a")[0].attributes["href"].value : "sold out!"
-  last_woot = title+" "+price+"\n"+"Buy Now: "+link
+  output =Nokogiri::HTML( http_get('http://www.woot.com/').body) rescue nil
+  if(output)
+    is_woot_off = output.search("img").select{|i| i.attributes["src"].value =~ /woot-off/}.size > 0
+    title = output.search("div.productDescription").search("h2").text
+    price = output.search("div.productDescription").search("h3").text
+    link = output.search("div.productDescription").search("h5 a")[0].attributes["href"] ? output.search("div.productDescription").search("h5 a")[0].attributes["href"].value : "sold out!"
+    last_woot = title+" "+price+"\n"+"Buy Now: "+link
+  else 
+    nil
+  end
+
 end
 
 command(:woot,:description => 'Get the current woot item') { woot }
@@ -32,14 +37,10 @@ command(:wootoff,:required=>[:state],:description => 'For private chat. start/st
 init do
   woot_watchers=load_data||[]
   (check = Proc.new {
-    puts Time.now.to_s
-    past_woot=last_woot.to_s.clone
-    puts past_woot
     if  woot_watchers.size>0
-      last_woot =  woot() 
-      puts last_woot
+      current =  woot() 
+      last_woot = current if current
       if(past_woot!=last_woot)
-        puts woot_watchers.join(":")
         send :to=>woot_watchers.uniq, :text=>("New Woot!\n"+last_woot) rescue error
       end
     end
