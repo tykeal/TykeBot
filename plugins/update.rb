@@ -22,13 +22,16 @@ command do
 end
 
 on :firehose do |bot,message|
-    info = details.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits to master:.+$/)
+  if message.body != nil
+    info = message.body.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits to master:.+$/)
     if bot.sender(message) == config.github_jid && info
+      details = message.body.match(/^\TykeBot\] (.+)$/)
       # info[1] is who, info[2] is number of commits
       bot.send(:text=>"A checkin on GitHub by #{info[1]} has initiated a bot update.  One moment please...\n\n#{details}")
       # give it a few seconds to let the room know...
       timer(3){updatescript}
     end
+  end
 end
 
 helper :updatescript do
