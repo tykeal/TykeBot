@@ -24,7 +24,7 @@ on :welcome do |bot,message|
 end
 
 on :firehose do |bot,message|
-  last_active = Time.now if started && bot.sender(message) != bot.name
+  last_active = Time.now if started && bot.sender(message) != bot.name && message.type == :groupchat
 end
 
 # setup idle fortune timer

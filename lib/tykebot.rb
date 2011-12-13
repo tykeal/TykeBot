@@ -225,6 +225,8 @@ class TykeBot
 
           jabber.stream.add_message_callback do |message|
             message = TykeMessage.new(message)
+            # push private chats into the firehose as well (this may well break things)
+            publish(:firehose, self, message)
             publish_command(message) if valid_command?(message)
           end
         end
