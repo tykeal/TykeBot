@@ -47,11 +47,13 @@ helper :display do |lines|
 end
 
 on :firehose do |bot,message|
-  URI.extract(message.body, ['http', 'https']).each do |url|
-    open(file,"a"){|f| f.puts JSON.generate({
-      :url=>url,
-      :from=>bot.sender(message),
-      :time=>Time.now.to_i
-    })}
-  end unless bot.sender(message) == bot.name
+  if message.body != nil
+    URI.extract(message.body, ['http', 'https']).each do |url|
+      open(file,"a"){|f| f.puts JSON.generate({
+        :url=>url,
+        :from=>bot.sender(message),
+        :time=>Time.now.to_i
+      })}
+    end unless bot.sender(message) == bot.name
+  end
 end
