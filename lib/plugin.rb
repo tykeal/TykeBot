@@ -234,7 +234,7 @@ private
   end
 
   def command_regex(name,required,optional)
-    Regexp.compile("^%s%s%s$" % [
+    Regexp.compile("\\A%s%s%s\\Z" % [
       Regexp.quote(name.to_s),
       Array(required).map{"(\s+.+?)"}.join,
       Array(optional).map{"(\s+.+?)?"}.join

@@ -167,8 +167,8 @@ private
   end
 
   def regex(name,a)
-    base = "^#{Regexp::quote(name.to_s)}"
-    Regexp.new "#{base}#{a.regex.source}\\s*$"
+    base = "\\A#{Regexp::quote(name.to_s)}"
+    Regexp.new "#{base}#{a.regex.source}\\s*\\Z"
   end
 
 end

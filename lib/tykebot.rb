@@ -115,7 +115,7 @@ class TykeBot
       @config = config
 
       @config[:is_public] ||= false
-      @config[:chat_prefix] ||= /^!(.+)$/
+      @config[:chat_prefix] ||= /\A!(.+)\Z/
 
       if @config[:name].nil? || @config[:name].length == 0
         @config[:name] = @config[:jabber_id].sub(/@.+$/, '')
