@@ -52,7 +52,7 @@ helper :report_match do |results, side_lines|
   else
     report << "<b>%s</b> with <b>%s</b> wins against <b>%s</b> with <b>%s</b>" % [win_order[1][0], win_order[1][1], win_order[0][0], win_order[0][1]]
   end
-  if !side_lines.nil? then
+  if !side_lines.empty? then
     report << '<br /><b>Sitting out this round</b><br />'
     side_lines.each do |f|
       report << "<b>%s</b>, " % f
