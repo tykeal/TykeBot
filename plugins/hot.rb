@@ -1,3 +1,4 @@
+require "uri"
 config :woeid, :default=>2490383, :description=>''
 config :error_msg, :default=>'woops, I failed talking to twitter...', :description=>'error message to give when twitter error'
 
@@ -40,8 +41,20 @@ helper :search do |q|
   JSON.parse(http_get(search_url % CGI.escape(q)).body)["results"].first
 end
 
+helper :link_up_tweets do |tweet|
+  tweet.gsub!(/(@\w+)/) do
+    name = $1
+    "<a href='http://twitter.com/#{name.sub("@","")}' target='_blank'>#{name}</a>"
+  end
+  tweet.gsub!(/(#\w+)/) do
+    name = $1
+    "<a href='http://twitter.com/#!/search?q=#{URI.escape(name)}' target='_blank'>#{name}</a>"
+  end
+  tweet 
+end
+
 helper :render_tweet do |tweet|
-  tweet ? "@%s %s" % [tweet["from_user"],tweet["text"]] : 'no tweets found...'
+  tweet ? "@%s %s" % [tweet["from_user"],link_up_tweets(tweet["text"])] : 'no tweets found...'
 end
 
 helper :render_topic do |t|
