@@ -54,7 +54,7 @@ helper :link_up_tweets do |tweet|
 end
 
 helper :render_tweet do |tweet|
-  tweet ? "@%s %s" % [tweet["from_user"],link_up_tweets(tweet["text"])] : 'no tweets found...'
+  tweet ? "<a href='http://twitter.com/%s' target='_blank'>@%s</a> %s" % [tweet["from_user"],tweet["from_user"],link_up_tweets(tweet["text"])] : 'no tweets found...'
 end
 
 helper :render_topic do |t|
