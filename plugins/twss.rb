@@ -6,7 +6,7 @@ on :firehose do |bot,message|
   if message.body != nil   
    if message.body.size>6 && bot.sender(message) != bot.name
     said=who_said_it(message.body)
-    if(said=="she_said")
+    if(said=="she_said" && rand(10)==4)
       bot.send(:text=>"Thats what she said!")
     end
    end
