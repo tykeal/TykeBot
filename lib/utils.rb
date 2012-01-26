@@ -2,6 +2,7 @@ require 'logger'
 require 'net/http'
 require 'net/https'
 require 'cgi'
+require "lib/naive_bayes"
 
 def h(s)
   CGI::escapeHTML(s)
@@ -104,3 +105,11 @@ def http_get(uri_str, limit = 10)
     response.error!
   end
 end
+
+good = File.open("plugins/twss_data/good.txt","r")
+bad = File.open("plugins/twss_data/bad.txt","r")
+TWSS_CLASSIFIER = NaiveBayes.new(["she_said","she_didnt_say"])
+good.each{|line| TWSS_CLASSIFIER .train("she_said",line)}
+bad.each{|line| TWSS_CLASSIFIER .train("she_didnt_say",line)}
+good.close
+bad.close
