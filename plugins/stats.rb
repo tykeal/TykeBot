@@ -3,7 +3,7 @@ command do
   description "show stats for the bot"
 
   action :show, :default=>true do |message|
-    bot.commands(!bot.master?(message)).sort.map{|cmd| "%s=%d" % [cmd.name,stats[cmd.name]||0]}.join("\n")
+    bot.commands(!message.sender.admin?).sort.map{|cmd| "%s=%d" % [cmd.name,stats[cmd.name]||0]}.join("\n")
   end
 
   action :clear do |message|

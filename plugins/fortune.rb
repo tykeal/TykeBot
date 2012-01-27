@@ -19,12 +19,12 @@ end
 
 on :welcome do |bot,message|
   if (started && rand(config.random) < 1)
-    send(:text => fortune("Welcome %s! Here have a fortune:\n" % bot.sender(message)))
+    send(:text => fortune("Welcome %s! Here have a fortune:\n" % message.sender.display))
   end
 end
 
 on :firehose do |bot,message|
-  last_active = Time.now if started && bot.sender(message) != bot.name && message.type == :groupchat
+  last_active = Time.now if started && !message.sender.bot? && message.room?
 end
 
 # setup idle fortune timer

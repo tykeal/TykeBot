@@ -1,3 +1,4 @@
+require 'forwardable'
 require 'logger'
 require 'net/http'
 require 'net/https'

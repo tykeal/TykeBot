@@ -10,7 +10,7 @@ command do
 
   action :required=>:command_name, 
     :description=>'show usage for the specified command' do |message,command_name|
-    if command = commands.detect{|cmd| cmd.names.map(&:to_s).include?(command_name)}
+    if command = commands(message).detect{|cmd| cmd.names.map(&:to_s).include?(command_name)}
       "#{command.names.join("|")} - #{command.description}\nUsage:\n" + 
         actions(message,command).map{ |a| syntax(command,a) }.join("\n")
     else
@@ -20,11 +20,11 @@ command do
 end
 
 helper :commands do |message|
-  bot.commands(!bot.master?(message))
+  bot.commands(!message.sender.admin?)
 end
 
 helper :actions do |message,command|
-  command.actions.select{|a|a.public?||bot.master?(message)}
+  command.actions.select{|a|a.public?||message.sender.admin?}
 end
 
 helper :syntax do |c,a|

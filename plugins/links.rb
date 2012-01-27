@@ -31,7 +31,7 @@ helper :links do |max,&block|
 end
 
 helper :filter_and_limit do |message,n,&block|
-  limit=message.group_chat? ? config.muc_limit : config.limit
+  limit=message.room? ? config.muc_limit : config.limit
   links bound(n,:default=>5,:max=>limit), &block
 end
 
@@ -47,13 +47,13 @@ helper :display do |lines|
 end
 
 on :firehose do |bot,message|
-  if message.body != nil
+  if message.body?
     URI.extract(message.body, ['http', 'https']).each do |url|
       open(file,"a"){|f| f.puts JSON.generate({
         :url=>url,
-        :from=>bot.sender(message),
+        :from=>message.sender.display,
         :time=>Time.now.to_i
       })}
-    end unless bot.sender(message) == bot.name
+    end unless message.sender.bot?
   end
 end

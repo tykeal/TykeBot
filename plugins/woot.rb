@@ -31,15 +31,15 @@ command :wootoff do
   description 'For private chat. start/stop posting the woot off!' 
 
   action :start do |message|
-    if !message.group_chat?
-      save_data(woot_watchers |= [jid(message)]) 
+    if message.chat?
+      save_data(woot_watchers |= [message.sender.jid]) 
       "You have been added to the watch list."
     end
   end
 
   action :stop, :default=>true do |message|
-    if !message.group_chat?
-      save_data(woot_watchers -= [jid(message)])
+    if message.chat?
+      save_data(woot_watchers -= [message.sender.jid])
       "You have been removed from the watch list."
     end
   end
@@ -47,10 +47,6 @@ command :wootoff do
   action :list do
     woot_watchers.map(&:to_s).join("\n")
   end
-end
-
-helper :jid do |message|
-  message.from.to_s.split("/").first
 end
 
 init do

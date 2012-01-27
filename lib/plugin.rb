@@ -1,4 +1,3 @@
-require 'forwardable'
 class Plugin
   extend Forwardable
   attr_reader :bot, :name, :enabled, :file, :commands

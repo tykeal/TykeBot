@@ -1,7 +1,7 @@
-command :is_public=>false do # only master can shutdown
+command :is_public=>false do # only admin can shutdown
   description 'Shut down Bot'
   action do |message|
-  	puts "#{bot.sender(message)} shut down the bot"
+  	puts "#{message.sender.admin?} shut down the bot"
   	bot.disconnect
   	exit
   end

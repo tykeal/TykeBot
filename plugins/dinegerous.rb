@@ -3,7 +3,7 @@ command do
   description 'Lookup health score on dinegerous.com'
 
   action :required=>:q, :optional=>:n do |message,q,n|
-    limit = bound( n, :min=>1, :max=>message.group_chat? ? 2 : 5)
+    limit = bound( n, :min=>1, :max=>message.room? ? 2 : 5)
     results = JSON.parse(http_get(config.url+CGI.escape(q)+"?limit=#{limit}").body)
     logger.debug("DINEGEROUS: results: #{results.inspect} limit: #{limit}")
     if results && !results.empty?

@@ -63,7 +63,7 @@ class Command
       action = self.names.map{|name| Regexp::quote(name.to_s)}.join("|")
       action = "(\\s+(#{action}))" if name?
       action = action + "?" if default? && name?
-      Regexp.new("#{action}#{params}")
+      Regexp.new("#{action}#{params}",Regexp::MULTILINE)
     end
     
     def args(match,first=0,last=-1)
@@ -131,9 +131,9 @@ class Command
   end
   
   # matches actions in order of arity, with default ones checked last
-  def match(chat_text,master=nil)
-    actions.select{|a| master || a.public?}.sort.each do |a|
-      logger.debug("COMMAND: #{names.inspect} #{a} #{a.regex.inspect}")
+  def match(chat_text,admin=nil)
+    actions.select{|a| admin || a.public?}.sort.each do |a|
+      #logger.debug("COMMAND: #{names.inspect} #{a} #{a.regex.inspect}")
       if params = action_match?(a,chat_text)
         logger.debug("COMMAND: #{names.inspect} #{a} matched with params #{params.inspect}")
         return [a,params] # stop at first action match
@@ -144,10 +144,10 @@ class Command
   end
 
   def message(bot,message)
-    a,args = match(message.body,bot.master?(message))
+    a,args = match(message.body,message.sender.admin?)
     if a
-      sender = bot.sender(message)
-      to = sender unless message.group_chat?
+      sender = message.sender.display
+      to = sender if message.chat?
       bot.publish(:command_match,self,sender,message,args)
 
       begin
@@ -187,7 +187,7 @@ private
 
   def regex(name,a)
     base = "\\A#{Regexp::quote(name.to_s)}"
-    Regexp.new "#{base}#{a.regex.source}\\s*\\Z"
+    Regexp.new "#{base}#{a.regex.source}\\s*\\Z",Regexp::MULTILINE
   end
 
 end

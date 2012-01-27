@@ -115,7 +115,7 @@ class TykeBot
       @config = config
 
       @config[:is_public] ||= false
-      @config[:chat_prefix] ||= /\A!(.+)\Z/
+      @config[:chat_prefix] ||= /\A!(.+)\Z/m
 
       if @config[:name].nil? || @config[:name].length == 0
         @config[:name] = @config[:jabber_id].sub(/@.+$/, '')
@@ -224,7 +224,7 @@ class TykeBot
           presence(@config[:presence], @config[:status], @config[:priority])
 
           jabber.stream.add_message_callback do |message|
-            message = TykeMessage.new(message)
+            message = TykeMessage.new(self,message)
             # push private chats into the firehose as well (this may well break things)
             publish(:firehose, self, message) unless delay_message?(message)
             publish_command(message) if valid_command?(message)
@@ -254,9 +254,9 @@ class TykeBot
         @room.join(jid)
 
         @room.add_message_callback do |message|
-          message = TykeMessage.new(message)
+          message = TykeMessage.new(self,message)
           # don't include past messages in firehose for now
-          publish(:firehose, self, message) unless delay_message?(message)
+          publish(:firehose, self, message) unless message.delay?
           if valid_command?(message)
             begin
             message.body = strip_prefix(message.body)
@@ -269,11 +269,11 @@ class TykeBot
         end
 
         @room.add_join_callback do |message|
-          publish(:welcome, self, message) 
+          publish(:welcome, self, TykeMessage.new(self,message))
         end
 
         @room.add_leave_callback do |message|
-          publish(:leave, self, message)
+          publish(:leave, self, TykeMessage.new(self,message))
         end
  
         publish(:join, self)
@@ -289,43 +289,8 @@ class TykeBot
       end
     end
 
-    # Returns an Array of masters
-    def masters
-      Array(@config[:master])
-    end
-
-    # Returns +true+ if the message/jabber-id is from a master +false+ otherwise.
-    def master?(message)
-      sender = case message
-      when Jabber::Message,TykeMessage
-        sender(message)
-      when String
-        message
-      end
-      masters.include?(sender)
-    end
-
-    def groupchat?(message)
-      message.type==:groupchat
-    end
-
-    # Returns the jabber-id of the sender
-    # TODO: fix for :groupchat messages.
-    def sender(message)
-      case message
-      when Jabber::Presence
-        # broken, this is actually the nick name
-        message.from.resource.to_s
-      when Jabber::Message,TykeMessage
-        if message.type == :groupchat
-          # broken, this is actually the nick name
-          message.from.resource.to_s
-        else
-          message.from.to_s.sub(/\/.+$/, '')
-        end 
-      when String
-        message
-      end
+    def master?(jid)
+      Array(@config[:master]).include?(jid)
     end
 
     # Sets the bot presence, status message and priority.
@@ -396,11 +361,7 @@ class TykeBot
 
     def add_command(command)
       @commands << command
-      on(:command){|bot,message| command.message(bot,message) if command.public? || master?(message)}
-    end
-
-    def delay_message?(message)
-      message.first_element('delay') 
+      on(:command){|bot,message| command.message(bot,message) if command.public? || message.sender.admin?}
     end
 
     def public?
@@ -422,13 +383,9 @@ class TykeBot
 private
 
     def valid_command?(message) #:nodoc:
-      (message.body && 
-      !delay_message?(message)) && 
-        ((message.type == :chat &&
-          sender(message) != name) ||
-        (message.type == :groupchat &&
-          sender(message) != name &&
-          strip_prefix(message.body)))
+      (message.body? && !message.delay? && !message.sender.bot?) && 
+        (message.chat? || 
+          (message.room? && strip_prefix(message.body)))
     end
 
     # strip off the :chat_prefix by returning the first group match
@@ -438,7 +395,8 @@ private
     end
 
     def publish_command(message)
-      publish :command, self, message if public? || master?(message)
+      logger.debug("COMMAND: #{message.body}")
+      publish :command, self, message if public? || message.sender.admin?
     end
 
 end
