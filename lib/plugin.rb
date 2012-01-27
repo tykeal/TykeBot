@@ -3,7 +3,7 @@ class Plugin
   extend Forwardable
   attr_reader :bot, :name, :enabled, :file, :commands
 
-  def_delegators :@bot, :publish, :on, :send
+  def_delegators :@bot, :publish, :on, :before, :send
   
   def initialize(bot,file)
     @bot=bot
@@ -43,7 +43,7 @@ class Plugin
   def command(*args,&block)
     return @working_command if @working_command
     name, options = _parse_name_and_options(args,self.name)
-    @working_command = cmd = Command.new({:plugin=>self}.merge(options.merge(:name=>name)))
+    @working_command = cmd = Command.new({:plugin=>self,:name=>name}.merge(options))
     yield(cmd) if block
     bot.add_command(cmd)
     @working_command=nil 
@@ -63,7 +63,7 @@ class Plugin
   # add action to workgin command
   def action(*args,&block)
     name, options = _parse_name_and_options(args)
-    command.action(options.merge(:name=>name),&block)
+    command.action({:name=>name}.merge(options),&block)
   end
 
   # resource() do ...
@@ -78,7 +78,7 @@ class Plugin
       cmd.action(:name=>:sample,:default=>true) { (load_data||[]).sample }
       cmd.action(:name=>:list) { (load_data||[]).map{|l| l.to_s}.join("\n")}
       cmd.action(:name=>[:add,'+'],:required=>:d) {|msg,d| save_data( (load_data||[]) | [d] )}
-      cmd.action(:name=>[:delete,:del,'-'],:required=>:d) {|msg,d| debug("RESOURCE: - #{load_data.inspect} d: #{d.inspect}"); save_data( (load_data||[]) - [d] )}
+      cmd.action(:name=>[:delete,:del,:-],:required=>:d) {|msg,d| debug("RESOURCE: - #{load_data.inspect} d: #{d.inspect}"); save_data( (load_data||[]) - [d] )}
 
       # now run as normal
       block.call(cmd) if block
@@ -233,18 +233,4 @@ private
     return File.basename(File.dirname(file.strip)) 
   end
 
-  def command_regex(name,required,optional)
-    Regexp.compile("\\A%s%s%s\\Z" % [
-      Regexp.quote(name.to_s),
-      Array(required).map{"(\s+.+?)"}.join,
-      Array(optional).map{"(\s+.+?)?"}.join
-    ])
-  end
-
-  def command_syntax(name,required,optional)
-    s="#{name}" 
-    s+=' ' + Array(required).map{|n|"<#{n}>"}.join(" ") if required
-    s+=' ' + Array(optional).map{|n|"[<#{n}>]"}.join(" ") if optional
-    s
-  end
 end

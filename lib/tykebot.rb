@@ -415,6 +415,10 @@ class TykeBot
       @pubsub.on(name,&callback)
     end
 
+    def before(name,&callback)
+      @pubsub.before(name,&callback)
+    end
+
 private
 
     def valid_command?(message) #:nodoc:

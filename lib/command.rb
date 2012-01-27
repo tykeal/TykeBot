@@ -9,6 +9,19 @@
 class Command
   attr_reader :plugin
   attr_accessor :enabled, :description, :actions, :names
+
+  # an exception if you want to report an error via chat message
+  class CommandException < StandardError
+    attr_accessor :reply, :usage
+    def initialize(options={})
+      super(options[:message])
+      @reply=options[:reply]
+      @usage=options[:usage]
+    end
+    def reply?
+      reply
+    end
+  end
   
   class Action
     attr_reader :names, :syntax, :regex, :description, :callback, :required, :optional
@@ -107,7 +120,7 @@ class Command
   def action(options,&callback)
     new_action = Action===options ? options : Action.new(options,&callback)
     # replace any with (shared name/alias or both default) + same arity
-    actions.delete_if do |existing_action|
+    @actions.delete_if do |existing_action|
       ((existing_action.names & new_action.names).size > 0 ||
           existing_action.default? && new_action.default?) &&
         existing_action.required.size == new_action.required.size &&
@@ -134,17 +147,23 @@ class Command
     a,args = match(message.body,bot.master?(message))
     if a
       sender = bot.sender(message)
+      to = sender unless message.group_chat?
       bot.publish(:command_match,self,sender,message,args)
-      if response = a.act(args, message)
-        logger.debug("COMMAND: #{names.join("|")} sending response: #{response}")
-        to = sender unless message.group_chat?
-        if a.html?
-          html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge(:output=>:xhtml))
-          logger.debug("COMMAND: sanitized html: #{html}")
-          bot.send(:xhtml=>html,:to=>to)
-        else
-          bot.send(:text=>response,:to=>to)
+
+      begin
+        if response = a.act(args, message)
+          logger.debug("COMMAND: #{names.join("|")} sending response: #{response}")
+          if a.html?
+            html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge(:output=>:xhtml))
+            logger.debug("COMMAND: sanitized html: #{html}")
+            bot.send(:xhtml=>html,:to=>to)
+          else
+            bot.send(:text=>response,:to=>to)
+          end
         end
+      rescue CommandException => e
+        bot.send(:text=>e.reply,:to=>to) if e.reply?
+        raise e # pass it up
       end
     end
   end

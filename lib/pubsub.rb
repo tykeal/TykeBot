@@ -3,6 +3,7 @@ class PubSub
   def initialize(options={})
     @queue = Queue.new
     @subscribers={}
+    @befores={}
     start_publisher if options[:start_publisher]
   end
 
@@ -16,12 +17,17 @@ class PubSub
     (@subscribers[name]||=[]) << callback
   end
 
+  def before(name,&callback)
+    (@befores[name]||=[]) << callback
+  end
+
   # publish thread
   def start_publisher
     @publisher_thread=Thread.new do
       loop do
         begin 
           name, params = @queue.pop # blocks
+          (@befores[name]||[]).each {|callback| dispatch(params,callback)}
           (@subscribers[name]||[]).each {|callback| dispatch(params,callback)}
         rescue Exception => e
           error(e)
