@@ -154,7 +154,9 @@ class Command
         if response = a.act(args, message)
           logger.debug("COMMAND: #{names.join("|")} sending response: #{response}")
           if a.html?
-            html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge(:output=>:xhtml))
+            atts = Sanitize::Config::RELAXED[:attributes]
+            atts['p'] = ['style']
+            html = Sanitize.clean(response, Sanitize::Config::RELAXED.merge({:output=>:xhtml, :attributes => atts}))
             logger.debug("COMMAND: sanitized html: #{html}")
             bot.send(:xhtml=>html,:to=>to)
           else
