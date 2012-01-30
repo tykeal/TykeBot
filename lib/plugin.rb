@@ -2,7 +2,7 @@ class Plugin
   extend Forwardable
   attr_reader :bot, :name, :enabled, :file, :commands
 
-  def_delegators :@bot, :publish, :on, :before, :send
+  def_delegators :@bot, :publish, :send
   
   def initialize(bot,file)
     @bot=bot
@@ -17,6 +17,16 @@ class Plugin
   # DSL helper function to require files from the plugins dir
   def plugin_require(filename)
     Kernel.require(File.join(@dir,filename))
+  end
+
+  # wrap pubsub with check to make sure we are enabled
+  def on(name,&callback)
+    bot.on(name){|*args| callback.call(*args) if enabled}
+  end
+
+  # wrap pubsub with check to make sure we are enabled
+  def before(name,&callback)
+    bot.before(name){|*args| callback.call(*args) if enabled}
   end
  
   # DSL helper function to calc an int in range of min,max with default value if nil
@@ -46,6 +56,7 @@ class Plugin
     yield(cmd) if block
     bot.add_command(cmd)
     @working_command=nil 
+    @commands << cmd
     cmd
   end
 

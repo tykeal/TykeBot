@@ -56,7 +56,7 @@ init do
     if  woot_watchers.size>0
       current =  woot() 
       last_woot = current if current
-      if(past_woot!=last_woot)
+      if(past_woot!=last_woot && last_woot)
         send :to=>woot_watchers.uniq, :text=>("New Woot!\n"+last_woot) rescue error
       end
     end

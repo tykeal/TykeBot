@@ -41,9 +41,9 @@ helper :render_plugin do |p|
   ]
 end
 
-helper :plugin_do do |name|
+helper :plugin_do do |name,&block|
   if p = bot.plugins.detect{|p| p.name==name}
-    yield(p)
+    block.call(p)
   else
     "Unknown plugin '#{name}'.  Type plugin to see the installed plugins."
   end

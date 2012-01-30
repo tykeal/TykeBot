@@ -4,13 +4,13 @@ command do
 
   action :description=>'list all commands' do |message|
     "I understand the following commands:\n" +
-      commands(message).sort.map{|command|
+      bot_commands(message).sort.map{|command|
         "  %s - %s" % [command.names.join("|"),command.description]}.join("\n")
   end
 
   action :required=>:command_name, 
     :description=>'show usage for the specified command' do |message,command_name|
-    if command = commands(message).detect{|cmd| cmd.names.map(&:to_s).include?(command_name)}
+    if command = bot_commands(message).detect{|cmd| cmd.names.map(&:to_s).include?(command_name)}
       "#{command.names.join("|")} - #{command.description}\nUsage:\n" + 
         actions(message,command).map{ |a| syntax(command,a) }.join("\n")
     else
@@ -19,7 +19,7 @@ command do
   end
 end
 
-helper :commands do |message|
+helper :bot_commands do |message|
   bot.commands(!message.sender.admin?)
 end
 
