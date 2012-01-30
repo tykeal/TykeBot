@@ -3,3 +3,10 @@ Welcome to TykeBot!
 A ruby based XMPP (Jabber) chat bot designed for working in bot MUC &
 singlet configurations.
 
+## Libraries known to be required to use this bot ##
+
+### image plugin requirements ###
+freeimage >= 3.14
+aalib
+
+Please make sure you have done a bundle install!
