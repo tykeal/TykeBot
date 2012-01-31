@@ -41,6 +41,8 @@ require 'rubygems'
 require 'xmpp4r'
 require 'xmpp4r/framework/bot'
 require 'xmpp4r/muc'
+require 'xmpp4r/vcard'
+require 'base64'
 require 'sanitize'
 require 'lib/utils'
 require 'lib/dynamic_loader'
@@ -116,6 +118,7 @@ class TykeBot
 
       @config[:is_public] ||= false
       @config[:chat_prefix] ||= /\A!(.+)\Z/m
+      @config[:avatar] ||= 'data/TykeBot.png'
 
       if @config[:name].nil? || @config[:name].length == 0
         @config[:name] = @config[:jabber_id].sub(/@.+$/, '')
@@ -203,6 +206,8 @@ class TykeBot
             join if config[:room]
             init_plugins
           end
+          # Beacon our presence on every connection check
+          presence(@config[:presence], @config[:status], @config[:priority])
           logger.debug("joining pubsub thread...")
           @pubsub.join(check_connection_every_n_seconds)
         rescue
@@ -221,7 +226,8 @@ class TykeBot
         @jabber = Jabber::Framework::Bot.new(jid, @config[:password])
         if connected?
           logger.info("Connected.")
-          presence(@config[:presence], @config[:status], @config[:priority])
+          # connect our avatar
+          set_avatar
 
           jabber.stream.add_message_callback do |message|
             message = TykeMessage.new(self,message)
@@ -232,6 +238,33 @@ class TykeBot
         end
       rescue Exception => e
         logger.error(e)
+      end
+    end
+
+    def set_avatar
+      if not @config[:avatar].nil? && connected?
+        logger.info("Setting avatar to %s",@config[:avatar])
+        Thread.new do
+          vcard = Jabber::Vcard::IqVcard.new
+          vcard["FN"] = @config[:name]
+          vcard["NICKNAME"] = @config[:name]
+          # buddy icon
+          vcard["PHOTO/TYPE"] = "image/png"
+          # open buddy icon/avatar image file
+          image_file = File.new(@config[:avatar], 'r')
+          # Base64 encode the file contents
+          image_b64 = Base64.encode64(image_file.read())
+          # process sha1 hash of photo conents
+          # this is used by the presence setting
+          image_file.rewind
+          @avatar_sha1 = Digest::SHA1.hexdigest(image_file.read())
+          vcard["PHOTO/BINVAL"] = image_b64
+          begin
+            vcard_helper = Jabber::Vcard::Helper.new(@jabber.stream).set(vcard)
+          rescue
+            logger.info("#{Time.now} vcard operation timed out.")
+          end
+        end
       end
     end
 
@@ -300,6 +333,20 @@ class TykeBot
       @config[:priority] = priority
 
       status_message = Jabber::Presence.new(presence, status, priority)
+      # Attach our avatar info
+      if not @avatar_sha1.nil?
+        x = REXML::Element::new("x")
+        x.add_namespace('vcard-temp:x:update')
+        photo = REXML::Element::new('photo')
+        # avatar sha1 that was computed by the add_avatar call
+        avatar_hash = REXML::Text.new(@avatar_sha1)
+        # add text to the photo
+        photo.add(avatar_hash)
+        # add the photo to x
+        x.add(photo)
+        # attach this to our presence
+        status_message.add_element(x)
+      end
       @jabber.stream.send(status_message) if @jabber.stream.is_connected?
     end
 
@@ -381,6 +428,8 @@ class TykeBot
     end
 
 private
+    # initialize our avatar_sha1 to nothing
+    @avatar_sha1 = nil
 
     def valid_command?(message) #:nodoc:
       (message.body? && !message.delay? && !message.sender.bot?) && 
