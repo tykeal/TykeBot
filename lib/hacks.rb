@@ -7,6 +7,7 @@ end
 
 class Array
   def sample ; self[rand(size)] ; end
+  def rest; self[1..-1]; end
 end
 
 class File
