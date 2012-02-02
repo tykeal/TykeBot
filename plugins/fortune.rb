@@ -19,7 +19,7 @@ end
 
 on :welcome do |bot,message|
   if (started && rand(config.random) < 1)
-    send(:text => fortune("Welcome %s! Here have a fortune:\n" % message.sender.display))
+    send(:text => fortune("Welcome %s! Here have a fortune:\n" % message.sender.nick))
   end
 end
 
