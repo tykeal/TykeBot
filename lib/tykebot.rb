@@ -44,6 +44,7 @@ require 'xmpp4r/muc'
 require 'xmpp4r/vcard'
 require 'base64'
 require 'sanitize'
+require 'shellwords'
 require 'lib/utils'
 require 'lib/dynamic_loader'
 require 'lib/hacks'
@@ -135,6 +136,8 @@ class TykeBot
       @inits=[]
       @pubsub = PubSub.new(:start_publisher=>true)
       @timer=CronTimer.new
+
+      on(:command) {|bot,message| dispatch_command(message)}
     end
 
     # used for room nick
@@ -408,7 +411,6 @@ class TykeBot
 
     def add_command(command)
       @commands << command
-      on(:command){|bot,message| command.message(bot,message) if command.public? || message.sender.admin?}
     end
 
     def public?
@@ -446,6 +448,18 @@ private
     def publish_command(message)
       logger.debug("COMMAND: #{message.body}")
       publish :command, self, message if public? || message.sender.admin?
+    end
+
+    def dispatch_command(message)
+      begin
+        # make sure its proper command line format!
+        args = message.body.to_s.shellsplit
+        @commands.each do |c|
+          c.message(self,message,args)
+        end
+      rescue 
+        send :to=> message.chat? ? message.sender.jid : nil, :text=>"Invalid command: #{$!}"
+      end
     end
 
 end

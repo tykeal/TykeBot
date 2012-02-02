@@ -1,4 +1,5 @@
 aliases = []
+config :max_alias_depth, :default=>256
 
 command do
   description "alias one command to another"
@@ -29,10 +30,23 @@ end
 
 # expand aliases before commands are processed
 before(:command) do |bot,message|
-  aliases.each do |a|
-    re=/^#{Regexp::quote(a.first)}/
-    if message.body.to_s =~ re
-      message.body = message.body.to_s.gsub(re, a.last)
+  # don't process aliases if command starts with !
+  if message.body.to_s =~ /^!/
+    message.body = message.body.to_s[1..-1]
+  else
+    # run aliases till no replacements found
+    done=false
+    times=0
+    while(!done&&times<config[:max_alias_depth])
+      done=true
+      aliases.each do |a|
+        re=/^#{Regexp::quote(a.first)}/
+        if message.body.to_s =~ re
+          message.body = message.body.to_s.gsub(re, a.last)
+          done=false
+        end
+      end
+      times+=1
     end
   end
 end

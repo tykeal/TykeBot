@@ -24,7 +24,7 @@ class Command
   end
   
   class Action
-    attr_reader :names, :syntax, :regex, :description, :callback, :required, :optional
+    attr_reader :names, :syntax, :description, :callback, :required, :optional
 
     # Examples:
     def initialize(options={},&callback)
@@ -37,7 +37,6 @@ class Command
       @required = Array(options[:required])
       @optional = Array(options[:optional])
       @default = options[:default]
-      @regex = options[:regex] # raw/advanced
     end
 
     def name; @names.first ; end
@@ -54,21 +53,21 @@ class Command
       "#{action}#{required.map{|r|" <#{r}>"}.join}#{optional.map{|o| " [<#{o}>]"}.join}"
     end
 
-    # TODO: support quoted and getopt -s --long arguments!
-    # /(\s+.*?)$/                    # no name: captures start at 0
-    # /(\s+(name))?(\s+.*?)$/        # default: captures start at 1
-    # /(\s+(name1|name2|...))?\s*$/  # default, aliased: captures start at 1
-    def regex
-      params = "#{required.map{'\s+(.*?)'}.join}#{optional.map{'(\s+.*?)?'}.join}"
-      action = self.names.map{|name| Regexp::quote(name.to_s)}.join("|")
-      action = "(\\s+(#{action}))" if name?
-      action = action + "?" if default? && name?
-      Regexp.new("#{action}#{params}",Regexp::MULTILINE)
+    def match(text,params)
+      (default? && required.size<=params.size) ||
+        (names.map(&:to_s).include?(params.first) && required.size<=params.rest.size)
     end
-    
-    def args(match,first=0,last=-1)
-      first += (name? ? 2 : 0)
-      match.captures[first..last].map{|s| s ? s.strip : nil}
+
+    def args(text,params)
+      params.shift if name? && names.map(&:to_s).include?(params.first)
+      num = required.size + optional.size
+      if params.size == 0
+        [] # no params
+      elsif num == 0
+        [params.join(" ")] # no args, so turn all the params into 1
+      else
+        ((num > 1 ? params[0..(num-2)] : []) + [(params[(num-1)..-1]||[]).join(" ")])
+      end.compact.reject{|p| p==""}.map(&:strip)
     end
 
     def act(args,message)
@@ -131,20 +130,19 @@ class Command
   end
   
   # matches actions in order of arity, with default ones checked last
-  def match(chat_text,admin=nil)
+  def match(chat_text,params,admin=nil)
     actions.select{|a| admin || a.public?}.sort.each do |a|
-      #logger.debug("COMMAND: #{names.inspect} #{a} #{a.regex.inspect}")
-      if params = action_match?(a,chat_text)
-        logger.debug("COMMAND: #{names.inspect} #{a} matched with params #{params.inspect}")
-        return [a,params] # stop at first action match
+      if args = action_match?(a,chat_text,params)
+        logger.debug("COMMAND: #{names.inspect} #{a} matched with params #{args.inspect}")
+        return [a,args] # stop at first action match
       end
     end
     # no matching commands found
     return nil
   end
 
-  def message(bot,message)
-    a,args = match(message.body,message.sender.admin?)
+  def message(bot,message,args)
+    a,args = match(message.body,args,message.sender.admin?)
     if a
       sender = message.sender.display
       to = sender if message.chat?
@@ -177,19 +175,10 @@ class Command
 private
 
   # returns args if match, nil otherwise
-  def action_match?(a,s)
-    names.each do |name|
-      # TODO: allow mid chat matching
-      if match = s.match(regex(name,a))
-        return a.args(match)
-      end
+  def action_match?(a,s,params)
+    if names.map(&:to_s).include?(params.first) && a.match(s,params.rest)
+      a.args(s,params.rest)
     end
-    return nil
-  end
-
-  def regex(name,a)
-    base = "\\A#{Regexp::quote(name.to_s)}"
-    Regexp.new "#{base}#{a.regex.source}\\s*\\Z",Regexp::MULTILINE
   end
 
 end

@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'shellwords'
 require 'lib/command'
 
 def action(options={},&callback)
@@ -11,10 +12,6 @@ end
 
 
 describe Command do
-
-  it 'should correctly make regex' do
-    command.send(:regex,'test',mock(:regex=>/action/)).should eql(/^testaction\s*$/)
-  end
 
   it 'should replace action with same arity' do
     a1 = action(:required=>:n)
@@ -37,21 +34,24 @@ describe Command do
   it 'command foo action bar with one required arg should match "foo bar arg"' do
     c = command(:name=>:foo)
     a = c.action action(:name=>:bar,:required=>:n)
-    c.match("foo bar arg").should == [a,["arg"]]
+    c.match("foo bar arg","foo bar arg".shellsplit).should == [a,["arg"]]
+  end
+
+  it 'command should handle quoted args' do
+    c = command(:name=>:foo)
+    a = c.action action(:name=>:bar,:required=>:n)
+    c.match("foo bar 'quoted arg'","foo bar 'quoted arg'".shellsplit).should == [a,["quoted arg"]]
+  end
+
+  it 'command should bundle up extra args' do
+    c = command(:name=>:foo)
+    a = c.action action(:name=>:bar,:required=>:n)
+    c.match("foo bar quoted arg","foo bar quoted arg".shellsplit).should == [a,["quoted arg"]]
   end
 
 end
 
 describe Command::Action do
-
-  describe 'regex' do
-    it 'should create correct regex for required param' do
-      action(:required=>:n).regex.should eql(/\s+(.*?)/)
-    end
-    it 'should create correct regex for optional param' do
-      action(:optional=>:n).regex.should eql(/(\s+.*?)?/)
-    end
-  end
 
   it 'should sort properly high arity above low' do
     (action(:required=>:n) <=> action).should == -1
