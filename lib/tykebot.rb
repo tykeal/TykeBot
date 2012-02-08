@@ -168,7 +168,7 @@ class TykeBot
 
     # Load the array of plugins passed.  This can be populated by calling discover_plugins.
     def load_plugins(plugins)
-      plugins.each do |plugin|
+      plugins.sort{|a,b| a.name<=>b.name}.each do |plugin|
         begin
           logger.debug("Loading plugin: %s from: %s",plugin.name,plugin.file)
           DynamicLoader.new{plugin}.load(plugin.file)
