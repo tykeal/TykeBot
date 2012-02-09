@@ -451,15 +451,24 @@ private
     end
 
     def dispatch_command(message)
+      # make sure its proper command line format!
       begin
-        # make sure its proper command line format!
-        args = message.body.to_s.shellsplit
+        args = parse_command(message)
         @commands.each do |c|
-          c.message(self,message,args)
+          begin
+            c.message(self,message,args)
+          rescue
+            send :to=> message.chat? ? message.sender.jid : nil, :text=>"Internal Bot Error!!!  #{$!}"
+            error
+          end
         end
-      rescue 
+      rescue
         send :to=> message.chat? ? message.sender.jid : nil, :text=>"Invalid command: #{$!}"
       end
+    end
+
+    def parse_command(message)
+      message.body.to_s.shellsplit
     end
 
 end

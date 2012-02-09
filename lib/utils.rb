@@ -6,7 +6,12 @@ require 'cgi'
 require "lib/naive_bayes"
 
 def h(s)
-  CGI::escapeHTML(s)
+  begin
+    s ? CGI::escapeHTML(s) : ""
+  rescue
+    error
+    "" # screw it!
+  end
 end
 
 # todo replace with a decent logging system.
@@ -91,7 +96,8 @@ def time_diff_in_natural_language(from_time, to_time)
   components.join(", ") + (from_time > to_time ? ' ago' : '')
 end
 
-def http_get(uri_str, limit = 10)
+def http_get(uri_str, options={})
+  limit = options[:limit] || 10
   raise ArgumentError, 'HTTP redirect too deep' if limit == 0
 
   url = URI.parse(uri_str)
@@ -101,7 +107,13 @@ def http_get(uri_str, limit = 10)
 
   case response
   when Net::HTTPSuccess     then response
-  when Net::HTTPRedirection then fetch(response['location'], limit - 1)
+    case options[:format]
+    when :json
+      JSON.parse(response.body)
+    else
+      response
+    end
+  when Net::HTTPRedirection then http_get(response['location'],options.merge(:limit=>limit - 1))
   else
     response.error!
   end
