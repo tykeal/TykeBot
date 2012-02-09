@@ -23,7 +23,7 @@ command do
       counter.delete(from) # prevent double voting
       counter << from
       save_awards(data)
-      "Congradulations!  #{who} has been awarded the '#{award}' award by #{from}."
+      "Congratulations!  #{who} has been awarded the '#{award}' award by #{from}."
     else
       "#{who} is not a member of the room!  Try one of #{bot.room.roster.map{|nick,p| nick}.join(", ")}"
     end
