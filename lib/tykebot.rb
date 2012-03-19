@@ -207,10 +207,10 @@ class TykeBot
           unless connected?
             connect
             join if config[:room]
+            # Beacon our presence on every successful connection
+            presence(@config[:presence], @config[:status], @config[:priority])
             init_plugins
           end
-          # Beacon our presence on every connection check
-          presence(@config[:presence], @config[:status], @config[:priority])
           logger.debug("joining pubsub thread...")
           @pubsub.join(check_connection_every_n_seconds)
         rescue
