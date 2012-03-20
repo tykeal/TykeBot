@@ -15,7 +15,7 @@ def woot()
     title = output.search("div.productDescription").search("h2").text
     price = output.search("div.productDescription").search("h3").text
     link = output.search("div.productDescription").search("h5 a")[0].attributes["href"] ? output.search("div.productDescription").search("h5 a")[0].attributes["href"].value : "sold out!"
-    last_woot = title+" "+price+"\n"+"Buy Now: "+link
+    last_woot = title+" "+price+"<br/>"+'<a href="'+link+'">Buy Now</a> or <a href="http://www.woot.com">Read More</a>'
   else 
     nil
   end
@@ -24,7 +24,7 @@ end
 
 command do
   description 'Get the current woot item'
-  action{ woot }
+  action(:html=>true){ woot }
 end
 
 command :wootoff do
@@ -57,7 +57,7 @@ init do
       current =  woot() 
       last_woot = current if current
       if(past_woot!=last_woot && last_woot)
-        send :to=>woot_watchers.uniq, :text=>("New Woot!\n"+last_woot) rescue error
+        send :to=>woot_watchers.uniq, :html=>("New Woot!<br/>"+last_woot) rescue error
       end
     end
     timer(config.woot_off_check,&check)
