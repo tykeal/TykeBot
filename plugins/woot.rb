@@ -57,7 +57,7 @@ init do
       current =  woot() 
       last_woot = current if current
       if(past_woot!=last_woot && last_woot)
-        send :to=>woot_watchers.uniq, :html=>("New Woot!<br/>"+last_woot) rescue error
+        send :to=>woot_watchers.uniq, :xhtml=>("New Woot!<br/>"+last_woot) rescue error
       end
     end
     timer(config.woot_off_check,&check)
