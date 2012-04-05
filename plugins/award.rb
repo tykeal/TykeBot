@@ -45,12 +45,12 @@ command do
 end
 
 helper :display_awards do |awardee,awards|
-  "#{awardee}: " + awards.map{|award,awarders| "#{award} (+#{awarders.size})"}.join(", ")
+  "#{awardee}: " + awards.map{|award,awarders| "#{award} (L#{awarders.size})"}.join(", ")
 end
 
 helper :display_awards_detail do |awardee,awards|
   if awards
-    "#{awardee}: " + awards.map{|award,awarders| "\n  #{award} (+#{awarders.size}) by #{awarders.join(", ")}"}.join('')
+    "#{awardee}: " + awards.map{|award,awarders| "\n  #{award} (L#{awarders.size}) by #{awarders.join(", ")}"}.join('')
   else
     "#{awardee}: No awards, so sad!"
   end
