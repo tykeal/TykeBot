@@ -14,8 +14,9 @@ def woot()
     #is_woot_off = output.search("img").select{|i| i.attributes["src"].value =~ /woot-off/}.size > 0
     title = output.search("div.productDescription").search("h2").text
     price = output.search("div.productDescription").search("h3").text
-    link = output.search("div.productDescription").search("h5 a")[0].attributes["href"] ? output.search("div.productDescription").search("h5 a")[0].attributes["href"].value : "sold out!"
-    last_woot = title+" "+price+"<br/>"+'<a href="'+link+'">Buy Now</a> or <a href="http://www.woot.com">Read More</a>'
+    buy  = output.search("div.productDescription").search("h5 a")[0].attributes["href"]
+    link = (buy && !buy.empty? && buy.value && !buy.value.empty?) ? '<a href="'+buy.value +'">Buy Now</a>': "sold out!"
+    last_woot = title+" "+price+"<br/>"+link+' or <a href="http://www.woot.com">Read More</a>'
   else 
     nil
   end
