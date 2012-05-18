@@ -8,6 +8,8 @@ options = ['key', 'priority', 'enabled', 'password']
 nma_url = 'https://www.notifymyandroid.com/publicapi/notify'
 prowl_url = 'https://api.prowlapp.com/publicapi/add'
 
+started = false
+
 command do
     description 'Send a notice to someone if they have notifications configured'
 
@@ -15,7 +17,7 @@ command do
         :optional    => :message,
         :description => 'Send a notice to handle if they have notifications configured' do |msg,handle,message|
         if (!config[handle].nil?)
-            send_notice(msg.sender.nick,handle,message)
+            send_notice(msg.sender.nick,handle,message,nil)
         else
             "#{handle} does not have a configuration set to send notices to"
         end
@@ -212,14 +214,14 @@ helper :do_registration do |nick,engine,key,priority,enabled,jid,password|
     save_data(config)
 end
 
-helper :send_notice do |sender,handle,message|
+helper :send_notice do |sender,handle,message,event|
     if (!config[handle]['key'].nil? && !config[handle]['engine'].nil? &&
         (config[handle]['enabled'].nil? || config[handle]['enabled'] == true))
         case config[handle]['engine'].downcase
         when 'nma' then
-            send_nma(sender,handle,message)
+            send_nma(sender,handle,message,event)
         when 'prowl' then
-            send_prowl(sender,handle,message)
+            send_prowl(sender,handle,message,event)
         else
             "#{handle} is has an unknown notification engine"
         end
@@ -228,13 +230,13 @@ helper :send_notice do |sender,handle,message|
     end
 end
 
-helper :send_nma do |sender,handle,message|
+helper :send_nma do |sender,handle,message,event|
     url = URI(nma_url)
 
     post_form = {
         'apikey'        => config[handle]['key'],
         'application'   => bot.name,
-        'event'         => "#{bot.name} Notification from #{sender}",
+        'event'         => event || "#{bot.name} Notification from #{sender}",
         'description'   => !message.nil? ? message : "You have been notified by #{sender}",
         'priority'      => !config[handle]['priority'].nil? ? config[handle]['priority'] : 0,
     }
@@ -242,6 +244,8 @@ helper :send_nma do |sender,handle,message|
     https = Net::HTTP.new(url.host, url.port)
     https.use_ssl = true
     https.ssl_timeout = 2
+    https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    https.ca_file = bot.config[:ca_file]
 
     https.start do |http|
         req = Net::HTTP::Post.new(url.path)
@@ -264,13 +268,13 @@ helper :send_nma do |sender,handle,message|
     end
 end
 
-helper :send_prowl do |sender,handle,message|
+helper :send_prowl do |sender,handle,message,event|
     url = URI(prowl_url)
 
     post_form = {
         'apikey'        => config[handle]['key'],
         'application'   => bot.name,
-        'event'         => "#{bot.name} Notification from #{sender}",
+        'event'         => event || "#{bot.name} Notification from #{sender}",
         'description'   => !message.nil? ? message : "You have been notified by #{sender}",
         'priority'      => !config[handle]['priority'].nil? ? config[handle]['priority'] : 0,
     }
@@ -278,6 +282,8 @@ helper :send_prowl do |sender,handle,message|
     https = Net::HTTP.new(url.host, url.port)
     https.use_ssl = true
     https.ssl_timeout = 2
+    https.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    https.ca_file = bot.config[:ca_file]
 
     https.start do |http|
         req = Net::HTTP::Post.new(url.path)
@@ -295,6 +301,23 @@ helper :send_prowl do |sender,handle,message|
         else
             response.error!
         end
+    end
+end
+
+# Avoid the bot from generating pages on replay during startup
+on :join do |bot|
+    timer(5) { started = true }
+end
+
+on :firehose do |bot,message|
+    if message.body? && started
+        config.keys.each do |nick|
+            if bot.room.roster[nick].nil?
+                if message.body.scan(nick)
+                    send_notice(message.sender.nick,nick,"#{bot.config[:room]}@conference.#{bot.config[:server]}: <#{message.sender.nick}> #{message.body}",'Highlight')
+                end
+            end
+        end unless message.sender.bot?
     end
 end
 
