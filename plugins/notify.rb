@@ -1,4 +1,3 @@
-require 'ap'
 require 'net/https'
 require 'nokogiri'
 
