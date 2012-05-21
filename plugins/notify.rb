@@ -312,7 +312,7 @@ on :firehose do |bot,message|
     if message.body? && started
         config.keys.each do |nick|
             if bot.room.roster[nick].nil?
-                if message.body.scan(nick)
+                if !message.body.match(nick).nil?
                     send_notice(message.sender.nick,nick,"#{bot.config[:room]}@conference.#{bot.config[:server]}: <#{message.sender.nick}> #{message.body}",'Highlight')
                 end
             end
