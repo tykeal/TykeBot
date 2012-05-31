@@ -12,11 +12,11 @@ def woot()
   output =Nokogiri::HTML( http_get('http://www.woot.com/').body) rescue nil
   if(output)
     #is_woot_off = output.search("img").select{|i| i.attributes["src"].value =~ /woot-off/}.size > 0
-    title = output.search("div.productDescription").search("h2").text
-    price = output.search("div.productDescription").search("h3").text
-    buy  = output.search("div.productDescription").search("h5 a")[0].attributes["href"]
-    link = (buy && buy.value && !buy.value.empty?) ?  "<a href='#{buy.value}'>Buy Now</a>" : "sold out!"
-    last_woot = "#{title} #{price}<br/>#{link} or <a href=\"http://www.woot.com\">Read More</a>"
+    title = output.search("h2.fn").text
+    price = output.search("span.price").text
+    #buy  = output.search("div.productDescription").search("h5 a")[0].attributes["href"]
+    #link = (buy && buy.value && !buy.value.empty?) ?  "<a href='#{buy.value}'>Buy Now</a>" : "sold out!"
+    last_woot = "#{title} #{price}<br/><a href=\"http://www.woot.com\">Read More</a>"
   else 
     nil
   end
