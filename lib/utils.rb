@@ -83,7 +83,7 @@ def time_diff_in_natural_language(from_time, to_time)
   distance_in_seconds = ((to_time - from_time).abs).round
   components = []
 
-  [[:year,60*60*24*365],[:week,60*60*24*7],[:day,60*60*24]].each do |name,interval|
+  [[:year,60*60*24*365],[:week,60*60*24*7],[:day,60*60*24],[:hour,60*60],[:minute,60],[:second,1]].each do |name,interval|
     # For each interval type, if the amount of time remaining is greater than
     # one unit, calculate how many units fit into the remaining time.
     if distance_in_seconds >= interval
@@ -93,7 +93,9 @@ def time_diff_in_natural_language(from_time, to_time)
     end
   end
 
-  components.join(", ") + (from_time > to_time ? ' ago' : '')
+  if components.size > 0
+    components.join(", ") + (from_time > to_time ? ' ago' : '')
+  end
 end
 
 def http_get(uri_str, options={})
