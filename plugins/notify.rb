@@ -1,8 +1,13 @@
 require 'net/https'
 require 'nokogiri'
+require 'net/smtp'
 
-config = {}
-engines = ['nma', 'prowl']
+config :from, :default=>'tykebot@bardicgrove.org', :description=>'From email address for notifications via email engine'
+config :smtphost, :default=>'localhost', :description=>'SMTP host name'
+config :smtpport, :default=>25, :description=>'SMTP port number'
+
+data = {}
+engines = ['nma', 'prowl', 'email']
 options = ['key', 'priority', 'enabled', 'password']
 nma_url = 'https://www.notifymyandroid.com/publicapi/notify'
 prowl_url = 'https://api.prowlapp.com/publicapi/add'
@@ -15,7 +20,7 @@ command do
     action :required => :handle,
         :optional    => :message,
         :description => 'Send a notice to handle if they have notifications configured' do |msg,handle,message|
-        if (!config[handle].nil?)
+        if (!data[handle].nil?)
             send_notice(msg.sender.nick,handle,message,nil)
         else
             "#{handle} does not have a configuration set to send notices to"
@@ -37,13 +42,13 @@ command do
             end
 
             # deal with registration differently if the nick is already being managed
-            if (!config[nick].nil?)
+            if (!data[nick].nil?)
                 # if they have a password that overrides the jid == jid check
-                if (config[nick]['password'] != '*' && password.nil?)
+                if (data[nick]['password'] != '*' && password.nil?)
                     "I'm sorry, this nick is password protected. Please supply a password."
-                elsif (config[nick]['password'] != '*' && password == config[nick]['password'])
+                elsif (data[nick]['password'] != '*' && password == data[nick]['password'])
                     do_registration(nick,engine,key,priority,true,msg.sender.jid,password)
-                elsif (config[nick]['jid'] == msg.sender.jid)
+                elsif (data[nick]['jid'] == msg.sender.jid)
                     do_registration(nick,engine,key,priority,true,msg.sender.jid,password)
                 else
                     "I'm sorry, you are trying to update this nick from an account that didn't register it. Please update from the account that registered the nick. If in the future you would like to make changes to the nick from a different account please register a password."
@@ -65,15 +70,15 @@ command do
         :optional    => :password,
         :description => 'Unregister nick from notificaitons (private message command only)' do |msg,nick,password|
         if msg.chat?
-            if (!config[nick].nil?)
-                if (config[nick]['password'] != '*' && password.nil?)
+            if (!data[nick].nil?)
+                if (data[nick]['password'] != '*' && password.nil?)
                     "I'm sorry, this nick is password protected. Please supply a password."
-                elsif (config[nick]['password'] != '*' && password == config[nick]['password'])
-                    config.delete(nick)
-                    save_data(config)
-                elsif (config[nick]['jid'] == msg.sender.jid)
-                    config.delete(nick)
-                    save_data(config)
+                elsif (data[nick]['password'] != '*' && password == data[nick]['password'])
+                    data.delete(nick)
+                    save_data(data)
+                elsif (data[nick]['jid'] == msg.sender.jid)
+                    data.delete(nick)
+                    save_data(data)
                 else
                     "This nick requires that you manage it from the registering account"
                 end
@@ -88,8 +93,8 @@ command do
     action :status,
         :required    => :nick,
         :description => 'Inform if nick has notifications configured and enabled' do |nick|
-        if (!config[nick].nil?)
-            if (config[nick]['enabled'])
+        if (!data[nick].nil?)
+            if (data[nick]['enabled'])
                 "#{nick} has notifications enabled"
             else
                 "#{nick} does not have notifications enabled"
@@ -104,12 +109,12 @@ command do
         :optional    => :password,
         :description => 'Display current configuration for nick (private message command only)' do |msg,nick,password|
         if (msg.chat?)
-            if (!config[nick].nil?)
-                if (config[nick]['password'] != '*' && password.nil?)
+            if (!data[nick].nil?)
+                if (data[nick]['password'] != '*' && password.nil?)
                     "I'm sorry, this nick is password protected. Please supply a password."
-                elsif (config[nick]['password'] != '*' && password == config[nick]['password'])
+                elsif (data[nick]['password'] != '*' && password == data[nick]['password'])
                     display_configuration(nick)
-                elsif (config[nick]['jid'] == msg.sender.jid)
+                elsif (data[nick]['jid'] == msg.sender.jid)
                     display_configuration(nick)
                 else
                     "I'm sorry, you are trying to get configuration information on this nick from an account that didn't register it. Please get request the information from the account that registered the nick. If, in the future you would like to make changes to the nick from a different account please register a password."
@@ -131,15 +136,15 @@ command do
         :optional    => :password,
         :description => 'Set configurations options (private message command only)' do |msg,nick,option,setting,password|
         if (msg.chat?)
-            if (!config[nick].nil?)
+            if (!data[nick].nil?)
                 option.downcase!
                 if (options.include?(option))
-                    if (config[nick]['password'] != '*' && password.nil?)
+                    if (data[nick]['password'] != '*' && password.nil?)
                         "I'm sorry, this nick is password protected. Please supply a password."
-                    elsif (config[nick]['password'] != '*' && password == config[nick]['password'])
-                        do_config_update(nick,option,setting)
-                    elsif (config[nick]['jid'] == msg.sender.jid)
-                        do_config_update(nick,option,setting)
+                    elsif (data[nick]['password'] != '*' && password == data[nick]['password'])
+                        do_data_update(nick,option,setting)
+                    elsif (data[nick]['jid'] == msg.sender.jid)
+                        do_data_update(nick,option,setting)
                     else
                         "I'm sorry, you are trying to set configuration information on this nick from an account that didn't register it. Please set the information from the account that registered the nick. If, in the future you would like to make changes to the nick from a different account please register a password."
                     end
@@ -174,14 +179,14 @@ end
 helper :display_configuration do |nick|
     ret  = "\n"
     ret += "nick: #{nick}\n"
-    ret += "key: #{config[nick]['key']}\n"
-    ret += "priority: #{config[nick]['priority']}\n"
-    ret += "enabled: #{config[nick]['enabled']}\n"
-    ret += "registering account: #{config[nick]['jid']}"
+    ret += "key: #{data[nick]['key']}\n"
+    ret += "priority: #{data[nick]['priority']}\n"
+    ret += "enabled: #{data[nick]['enabled']}\n"
+    ret += "registering account: #{data[nick]['jid']}"
     ret
 end
 
-helper :do_config_update do |nick,option,setting|
+helper :do_data_update do |nick,option,setting|
     case option
     when 'password' then
         if (setting == '')
@@ -197,12 +202,12 @@ helper :do_config_update do |nick,option,setting|
             return "enabled required true or false not '#{setting}'"
         end
     end
-    config[nick][option] = setting
-    save_data(config)
+    data[nick][option] = setting
+    save_data(data)
 end
 
 helper :do_registration do |nick,engine,key,priority,enabled,jid,password|
-    config[nick] = {
+    data[nick] = {
         'engine'    => engine,
         'key'       => key,
         'priority'  => priority || 0,
@@ -210,17 +215,19 @@ helper :do_registration do |nick,engine,key,priority,enabled,jid,password|
         'jid'       => jid,
         'password'  => password || '*',
     }
-    save_data(config)
+    save_data(data)
 end
 
 helper :send_notice do |sender,handle,message,event|
-    if (!config[handle]['key'].nil? && !config[handle]['engine'].nil? &&
-        (config[handle]['enabled'].nil? || config[handle]['enabled'] == true))
-        case config[handle]['engine'].downcase
+    if (!data[handle]['key'].nil? && !data[handle]['engine'].nil? &&
+        (data[handle]['enabled'].nil? || data[handle]['enabled'] == true))
+        case data[handle]['engine'].downcase
         when 'nma' then
             send_nma(sender,handle,message,event)
         when 'prowl' then
             send_prowl(sender,handle,message,event)
+        when 'email' then
+            send_email(sender,handle,message,event)
         else
             "#{handle} is has an unknown notification engine"
         end
@@ -233,11 +240,11 @@ helper :send_nma do |sender,handle,message,event|
     url = URI(nma_url)
 
     post_form = {
-        'apikey'        => config[handle]['key'],
+        'apikey'        => data[handle]['key'],
         'application'   => bot.name,
         'event'         => event || "#{bot.name} Notification from #{sender}",
         'description'   => !message.nil? ? message : "You have been notified by #{sender}",
-        'priority'      => !config[handle]['priority'].nil? ? config[handle]['priority'] : 0,
+        'priority'      => !data[handle]['priority'].nil? ? data[handle]['priority'] : 0,
     }
 
     https = Net::HTTP.new(url.host, url.port)
@@ -271,11 +278,11 @@ helper :send_prowl do |sender,handle,message,event|
     url = URI(prowl_url)
 
     post_form = {
-        'apikey'        => config[handle]['key'],
+        'apikey'        => data[handle]['key'],
         'application'   => bot.name,
         'event'         => event || "#{bot.name} Notification from #{sender}",
         'description'   => !message.nil? ? message : "You have been notified by #{sender}",
-        'priority'      => !config[handle]['priority'].nil? ? config[handle]['priority'] : 0,
+        'priority'      => !data[handle]['priority'].nil? ? data[handle]['priority'] : 0,
     }
 
     https = Net::HTTP.new(url.host, url.port)
@@ -303,6 +310,22 @@ helper :send_prowl do |sender,handle,message,event|
     end
 end
 
+helper :send_email do |sender,handle,message,event|
+  to = data[handle]['key']
+  msgstr = "From: #{bot.name} <#{config.from}>
+To: <#{to}>
+Subject: Notification from #{sender}
+Date: #{Time.now.rfc2822}
+Message-Id: <#{Time.now.to_i}#{rand}#{config.from}>
+
+#{(message||'That is all...')}
+"
+  logger.debug("email: #{msgstr}")
+  Net::SMTP.start(config.smtphost, config.smtpport) do |smtp|
+    smtp.send_message msgstr, config.from, to
+  end    
+end
+
 # Avoid the bot from generating pages on replay during startup
 on :join do |bot|
     timer(5) { started = true }
@@ -310,7 +333,7 @@ end
 
 on :firehose do |bot,message|
     if message.body? && started
-        config.keys.each do |nick|
+        data.keys.each do |nick|
             if bot.room.roster[nick].nil?
                 if !message.body.match(nick).nil?
                     send_notice(message.sender.nick,nick,"#{bot.config[:room]}@conference.#{bot.config[:server]}: <#{message.sender.nick}> #{message.body}",'Highlight')
@@ -321,5 +344,5 @@ on :firehose do |bot,message|
 end
 
 init do
-    config = load_data||{}
+    data = load_data||{}
 end
