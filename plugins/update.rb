@@ -8,12 +8,19 @@ command do
   action :is_public=>false do |message|
     send(:text=>"One of my masters told me I need an update.  One moment please...")
     timer(3){updatescript}
+    # Emit to my caller that I'm doing something instead of
+    # spitting out function pointers
+    'starting my update'
   end
 
 end
 
 on :firehose do |bot,message|
   if message.body != nil
+    if message.sender.jid == config.github_jid
+      # log that that we got a message from github to help debug
+      puts "message from GitHub: '#{message.body}'"
+    end
     info = message.body.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits to master:.+$/)
     if message.sender.jid == config.github_jid && info
       details = message.body.match(/^\[TykeBot\] (.+)$/)
