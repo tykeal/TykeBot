@@ -42,6 +42,7 @@ helper :search do |q|
 end
 
 helper :link_up_tweets do |tweet|
+  tweet = tweet.scan(/[[:print:]]/).join
   tweet.gsub!(/(@\w+)/) do
     name = $1
     "<a href='http://twitter.com/#{name.sub("@","")}' target='_blank'>#{name}</a>"
