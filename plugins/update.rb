@@ -21,7 +21,7 @@ on :firehose do |bot,message|
       # log that that we got a message from github to help debug
       puts "message from GitHub: '#{message.body}'"
     end
-    info = message.body.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits to master:.+$/)
+    info = message.body.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits? to master:/)
     if message.sender.jid == config.github_jid && info
       details = message.body.match(/^\[TykeBot\] (.+)$/)
       # info[1] is who, info[2] is number of commits
