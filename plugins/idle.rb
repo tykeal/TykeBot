@@ -1,6 +1,6 @@
 require 'ostruct'
 config :timer_push, :default=>5400, :description=>'number of seconds to wait between messages before spewing a fotune on room idle'
-config :commands, :default=>['fortune','commandfu','hot'], :description=>'list of commands the bot will pick from to run on idle'
+config :commands, :default=>['fortune','commandfu','hot','quip'], :description=>'list of commands the bot will pick from to run on idle'
 
 command do
   description "simulate idle condition"
