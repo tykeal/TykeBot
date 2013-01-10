@@ -135,30 +135,26 @@ class Plugin
   end
 
   class Config
+    attr_reader :values
     def initialize(hash)
-      @config = hash
-      @wrappers = {}
+      @values = {}
+      hash.each {|k,v| _declare(k); self[k]=v}
     end
     def [](key)
-      raise("Undefined configuration name #{key}.  Please declare your configuration options using the config() helper.") unless @wrappers[key]
-      @wrappers[key].call
+      raise("Undefined configuration name #{key}.  Please declare your configuration options using the config() helper.") unless @values[key.to_s]
+      @values[key.to_s][:current]
     end
-    def _wrappers
-      @wrappers
+    def []=(key,value)
+      @values[key.to_s][:current] = value
     end
-    def _wrap(key, options={}, &block)
-      raise("Illegal configuration name #{key}.  Please choose another name.") if methods.include?(key.to_s)
-      method = lambda do
-        value = @config[key]||options[:default]
-        if block
-          args = block.arity > 0 ? [value, @config[key], options[:default]][0..(block.arity)] : []
-          block.call(*args)
-        else
-          value
-        end
-      end
+    def _declare(key, options={})
+      key = key.to_s
+      raise("Illegal configuration name #{key}.  Please choose another name.  Current config: #{@values.inspect}") if !@values.include?(key) && methods.include?(key)
+      @values[key]||={}
+      @values[key].merge!(options)
+      @values[key][:current]||=options[:default]
+      method = lambda {@values[key][:current]}
       (class << self; self; end).instance_eval{ define_method(key,&method) }
-      @wrappers[key] = method
     end
   end
 
@@ -167,15 +163,11 @@ class Plugin
     @config_memo ||= Config.new(symbolize_keys(load_config))
     name,options = _parse_name_and_options(args)
     if name
-      @config_memo._wrap(name,options,&block)
+      @config_memo._declare(name,options,&block)
       self
     else
       @config_memo  
     end
-  end
-
-  def config_options()
-    config._wrappers      
   end
 
   def init(&block)
@@ -231,6 +223,11 @@ private
     
     # no config found, use empty
     {}
+  end
+
+  def save_config
+    current = {}
+    #TODO
   end
 
   def default_data_filename(ext=".yaml")

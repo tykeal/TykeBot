@@ -3,7 +3,7 @@ command :is_public=>false do
 
   action :description=>'show summary for each plugin' do
     "Plugin Info:\n\n" +
-      bot.plugins.sort{|a,b| a.name<=>b.name}.map{|p| render_plugin(p) }.join("\n")
+      bot.plugins.sort{|a,b| a.name<=>b.name}.map{|p| render_plugin(p) }.join("\n\n")
   end
 
   action :required=>:name, :description=>'show detail for the specificed plugin' do |msg,name|
@@ -25,6 +25,13 @@ command :is_public=>false do
       "plugin #{name} disabled."
     end
   end
+
+  action :config, :required=>[:name,:param,:value], :description=>"set config param"do |name,param,value| 
+    plugin_do(name) do |p|
+      p.config[param] = JSON.parse("{\"value\":#{value}}")["value"]
+      "success: set #{param} = #{JSON.generate(param=>p.config[param])}"
+    end
+  end
 end
 
 helper :save do
@@ -33,9 +40,10 @@ helper :save do
 end
 
 helper :render_plugin do |p|
-  "%s%s\n    commands=[%s] src=%s" % [
+  "%s%s\n    config=%s\n    commands=[%s]\n    src=%s" % [
     p.name,
     p.enabled==true ? '' : ' [DISABLED]',
+    JSON.pretty_generate(p.config.values),
     p.commands.sort.map{|c| "#{c.name}:#{c.public? ? 'public' : 'private'}"}.join(", "),
     p.file,
   ]
