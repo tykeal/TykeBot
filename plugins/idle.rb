@@ -4,8 +4,8 @@ config :commands, :default=>['fortune','commandfu','hot','quip'], :description=>
 
 command do
   description "simulate idle condition"
-  action do
-    rand_cmd
+  action do |msg|
+    rand_cmd(msg)
   end
 end
 
@@ -20,23 +20,34 @@ on :firehose do |bot,message|
   last_active = Time.now if started && !message.sender.bot? && message.room?
 end
 
-helper :rand_cmd do
-  send :text=>"It's been quiet too long.  I think we need to liven things up!"
-  # fake a tykemessage for now...
-  msg = TykeMessage.new bot, OpenStruct.new(
-    :body=>config[:commands].sample,
-    :type=>:groupchat,
-    :from=>bot.config[:jid]
-  )
-  publish(:command, bot, msg) 
+class FakeMessage
+  attr_accessor :body, :from, :t
+  def initialize(body, t, from); @body=body; @t=t; @from=from; end
+  def type; @t; end
 end
+
+# this has to simulate 3 different cases
+# 1) idle timer, no sender: respond to room
+# 2) room triggered (room jid w/ nick sender): respond to room
+# 3) individual triggered (jid sender): respond to jid
+helper :rand_cmd do |msg|
+  send :to=>msg && msg.chat? ? msg.sender.jid : nil, :text=>"It's been quiet too long.  I think we need to liven things up!"
+  # fake a tykemessage for now...
+  fake = TykeMessage.new bot, FakeMessage.new(
+    config[:commands].sample,
+    msg ? msg.type : :groupchat,
+    msg ? msg.sender.to_s : bot.config[:jid]
+  )
+  publish(:command, bot, fake) 
+end
+
 
 # setup idle timer
 init do
   last_sent = 0 
   (check = Proc.new { 
     if last_sent.to_i < last_active.to_i && Time.now-last_active >= config.timer_push
-      rand_cmd
+      rand_cmd(nil)
       last_sent = Time.now
     end 
     timer(600, &check)
