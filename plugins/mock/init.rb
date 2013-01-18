@@ -8,18 +8,21 @@ command do
   end
 
   action :required=>:nick do |msg,nick|
+    new_mockers = Array(mockers)
     if mock? nick
-      save_data(mockers.delete nick)
+      new_mockers.delete nick
+      save_data(new_mockers)
       "I will no longer mock #{nick}..."
     else
-      save_data(mockers << nick)
+      new_mockers << nick
+      save_data(new_mockers)
       "I will now be ruthlessly mocking #{nick}!"
     end
   end
 end
 
 on :firehose do |bot,msg|
-  insult msg.sender.nick if mock? msg.sender.nick
+  insult msg.sender.nick if !msg.sender.bot? and mock? msg.sender.nick
 end
 
 helper :mock? do |nick|
