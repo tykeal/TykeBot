@@ -281,7 +281,7 @@ class TykeBot
       serv = @config[:server]
       room = @config[:room]
 
-      jid = Jabber::JID.new("#{room}@conference.#{serv}/#{nick}")
+      jid = Jabber::JID.new("#{room}@conference.#{serv.split(':').first}/#{nick}")
       logger.info("Joining room %s",jid)
 
       # We need a connection or else we'll blow up
