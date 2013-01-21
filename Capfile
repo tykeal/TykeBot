@@ -59,7 +59,7 @@ namespace :deploy do
 
     run "ln -sfn #{latest_release} #{current_path}" 
     #run "ln -sfn #{shared_path}/config/bardic.yaml #{latest_release}/config/bardic.yaml"
-    run "for i in #{shared_path}/config; do ln -sfn ${i} #{latest_release}/config"
+    run "for i in #{shared_path}/config; do ln -sfn ${i} #{latest_release}/config; done"
     run "ln -sfn #{shared_path}/log #{latest_release}/"
     run "rm -rf #{latest_release}/data && ln -sfn #{shared_path}/data #{latest_release}/"
   end
