@@ -7,8 +7,10 @@ config :smtphost, :default=>'localhost', :description=>'SMTP host name'
 config :smtpport, :default=>25, :description=>'SMTP port number'
 
 data = {}
+# secondary structure for timers as we don't want to save those with the data
+datatimers = {}
 engines = ['nma', 'prowl', 'email']
-options = ['key', 'priority', 'enabled', 'password']
+options = ['key', 'priority', 'enabled', 'password', 'timeout', 'timeoutenabled']
 nma_url = 'https://www.notifymyandroid.com/publicapi/notify'
 prowl_url = 'https://api.prowlapp.com/publicapi/add'
 
@@ -182,6 +184,8 @@ helper :display_configuration do |nick|
     ret += "key: #{data[nick]['key']}\n"
     ret += "priority: #{data[nick]['priority']}\n"
     ret += "enabled: #{data[nick]['enabled']}\n"
+    ret += "timeout: #{data[nick]['timeout']}\n"
+    ret += "timeoutenabled: #{data[nick]['timeoutenabled']}\n"
     ret += "registering account: #{data[nick]['jid']}"
     ret
 end
@@ -206,12 +210,14 @@ helper :do_data_update do |nick,option,setting|
     save_data(data)
 end
 
-helper :do_registration do |nick,engine,key,priority,enabled,jid,password|
+helper :do_registration do |nick,engine,key,priority,enabled,timeout,timeoutenabled,jid,password|
     data[nick] = {
         'engine'    => engine,
         'key'       => key,
         'priority'  => priority || 0,
         'enabled'   => enabled,
+        'timeout'   => timeout || 900,
+        'timeoutenabled' => timeoutenabled,
         'jid'       => jid,
         'password'  => password || '*',
     }
@@ -323,7 +329,7 @@ Message-Id: <#{Time.now.to_i}#{rand}#{config.from}>
   logger.debug("email: #{msgstr}")
   Net::SMTP.start(config.smtphost, config.smtpport) do |smtp|
     smtp.send_message msgstr, config.from, to
-  end    
+  end
 end
 
 # Avoid the bot from generating pages on replay during startup
@@ -338,6 +344,16 @@ on :firehose do |bot,message|
                 if !message.body.match(nick).nil?
                     send_notice(message.sender.nick,nick,"#{bot.config[:room]}@conference.#{bot.config[:server]}: <#{message.sender.nick}> #{message.body}",'Highlight')
                 end
+            else
+                if message.sender.nick == nick
+                    datatimers[nick]['last_active'] = Time.now
+                else
+                    if message.room? && !message.body.match(nick).nil? && data[nick]['timeoutenabled']
+                        if Time.now - datatimers[nick]['last_active'] >= data[nick]['timeout'].to_i
+                            send_notice(message.sender.nick,nick,"#{bot.config[:room]}@conference.#{bot.config[:server]}: <#{message.sender.nick}> #{message.body}",'Highlight')
+                        end
+                    end
+                end
             end
         end unless message.sender.bot?
     end
@@ -345,4 +361,9 @@ end
 
 init do
     data = load_data||{}
+    data.keys.each do |nick|
+        datatimers[nick] = {
+            'last_active' => Time.now
+        }
+    end
 end
