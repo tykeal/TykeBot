@@ -3,7 +3,11 @@ config :insults, :description=>'list of insults with which to mock...'
 command do
   description "Makes the bot mock a poor soul..."
 
-  action do 
+  action do
+    config.insults.sample
+  end
+
+  action :list do 
     "Currently mocking #{mockers.inspect}."
   end
 
