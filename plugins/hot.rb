@@ -1,6 +1,18 @@
 require "uri"
+require "twitter"
 config :woeid, :default=>2490383, :description=>''
+config :consumer_key, :description=>'Twitter application API key'
+config :consumer_secret, :description=>'Twitter Application API secret'
+config :access_token, :description=>'Twitter OAuth2 API token'
+config :access_token_secret, :description=>'Twitter OAuth2 API token secret'
 config :error_msg, :default=>'woops, I failed talking to twitter...', :description=>'error message to give when twitter error'
+
+twitter = Twitter::Client.new(
+  :consumer_key => config.consumer_key,
+  :consumer_secret => config.consumer_secret,
+  :oauth_token => config.access_token,
+  :oauth_token_secret => config.access_token_secret
+)
 
 command do
   description 'Show trending tweets/topics on twitter'
@@ -9,7 +21,7 @@ command do
     handle_errors do
       trends=hot(config.woeid)
       "<p>Here's what the kids are tweeting about: " +
-        "#{render_tweet(search(trends.sample["name"]))}" +
+        "#{render_tweet(search(trends.sample[:name]))}" +
         "<br/><br/>#{trends.map{|t|render_topic(t)}.join(", ")}</p>"
     end
   end
@@ -32,13 +44,11 @@ helper :handle_errors do |&block|
 end
 
 helper :hot do |woeid|
-  trends_url="http://api.twitter.com/1/trends/#{woeid}.json"
-  JSON.parse(http_get(trends_url).body).first["trends"].reject{|t| t["promoted_content"]}
+  twitter.trends(woeid)
 end
 
 helper :search do |q|
-  search_url='http://search.twitter.com/search.json?q=%s&lang=en&result_type=popular&rpp=1'
-  JSON.parse(http_get(search_url % CGI.escape(q)).body)["results"].first
+  twitter.search(q, :count => 1)
 end
 
 helper :link_up_tweets do |tweet|
@@ -55,9 +65,14 @@ helper :link_up_tweets do |tweet|
 end
 
 helper :render_tweet do |tweet|
-  tweet ? "<a href='http://twitter.com/%s' target='_blank'>@%s</a> %s" % [tweet["from_user"],tweet["from_user"],link_up_tweets(tweet["text"])] : 'no tweets found...'
+  if tweet.attrs[:statuses].count >= 1
+    status = tweet.attrs[:statuses][0]
+    "<a href='http://twitter.com/%s' target='_blank'>@%s</a> %s" % [status[:user][:screen_name],status[:user][:screen_name],link_up_tweets(status[:text])]
+  else
+    'no tweets found...'
+  end
 end
 
 helper :render_topic do |t|
-  '<a href="%s">%s</a>' % [t["url"],h(t["name"])]
+  '<a href="%s">%s</a>' % [t[:url],t[:name]]
 end
