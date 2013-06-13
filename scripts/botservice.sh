@@ -14,6 +14,7 @@ fi
 
 WORKDIR=<%=variables[:current_path]%>
 NAME=<%=variables[:application]%>
+SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
 
 start() {
 	rvm use jruby-1.6.3@<%=variables[:application]%>
