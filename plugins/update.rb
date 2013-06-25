@@ -23,7 +23,8 @@ on :firehose do |bot,message|
     end
     info = message.body.match(/^\[TykeBot\] (\w+) pushed (\d+) new commits? to master:/)
     if message.sender.jid == config.github_jid && info
-      details = message.body.match(/^\[TykeBot\] (.+)$/)
+      # details = message.body.match(/^\[TykeBot\] (.+)$/)
+      details = message.body
       # info[1] is who, info[2] is number of commits
       bot.send(:text=>"A checkin on GitHub by #{info[1]} has initiated a bot update.  One moment please...\n\n#{details}")
       # give it a few seconds to let the room know...
