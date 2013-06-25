@@ -49,15 +49,15 @@ command do
                 if (data[nick]['password'] != '*' && password.nil?)
                     "I'm sorry, this nick is password protected. Please supply a password."
                 elsif (data[nick]['password'] != '*' && password == data[nick]['password'])
-                    do_registration(nick,engine,key,priority,true,msg.sender.jid,password)
+                    do_registration(nick,engine,key,priority,true,15,true,msg.sender.jid,password)
                 elsif (data[nick]['jid'] == msg.sender.jid)
-                    do_registration(nick,engine,key,priority,true,msg.sender.jid,password)
+                    do_registration(nick,engine,key,priority,true,15,true,msg.sender.jid,password)
                 else
                     "I'm sorry, you are trying to update this nick from an account that didn't register it. Please update from the account that registered the nick. If in the future you would like to make changes to the nick from a different account please register a password."
                 end
             else
                 if (!bot.room.roster[nick].nil? && (get_stripped_jid(nick) == msg.sender.jid))
-                    do_registration(nick,engine,key,priority,true,msg.sender.jid,password)
+                    do_registration(nick,engine,key,priority,true,15,true,msg.sender.jid,password)
                 else
                     'You must be currently using the nick you wish to register.'
                 end
