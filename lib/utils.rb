@@ -51,7 +51,7 @@ class StupidLogger
     # check last arg if backtrace, then check $!, else just go as normal
     e=args.last||$!
     if e.respond_to? :backtrace
-      @logger.error "%s%s\n%s" % [format(args[0..-2]), " " + e, e.backtrace.join("\n")]
+      @logger.error "%s%s\n%s" % [format(args[0..-2]), " " + e.message, e.backtrace.join("\n")]
     else
       @logger.error format(args)
     end
