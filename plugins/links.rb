@@ -1,4 +1,5 @@
-require 'uri'
+require 'open-uri'
+
 config :limit, :default=>1024, :description=>'max links to return one-on-one'
 config :muc_limit, :default=>20, :description=>'max links to return from the room if MUC'
 config :date_format, :default=>'%Y-%d-%m %I:%M%p', :description=>'Date format string to use for links, see Time#strftime'
@@ -54,6 +55,7 @@ on :firehose do |bot,message|
         :from=>message.sender.display,
         :time=>Time.now.to_i
       })}
+      open(url).read =~ /<title>(.*?)<\/title>/ && bot.send(:text => "Title for #{url} -- #{$1}") rescue nil
     end unless message.sender.bot?
   end
 end
