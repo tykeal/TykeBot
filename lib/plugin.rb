@@ -121,6 +121,7 @@ class Plugin
   end
 
   # defaults to yaml and plugin name .yaml
+  # loads from the data dir
   def load_data(filename=nil)
     filename=data_file(filename)
     return unless File.exist?(filename)
@@ -132,6 +133,11 @@ class Plugin
     else
       File.read(filename)
     end
+  end
+
+  # loads a file from the plugin directory
+  def load_file(filename)
+    File.read File.join("plugins",name,filename)
   end
 
   class Config

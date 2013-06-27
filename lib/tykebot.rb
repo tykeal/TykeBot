@@ -54,6 +54,7 @@ require 'lib/crontimer'
 require 'lib/pubsub'
 require 'lib/plugin'
 require 'lib/command'
+require "lib/naive_bayes"
 
 class TykeBot
     # Direct access to the Jabber::Framework::Bot
