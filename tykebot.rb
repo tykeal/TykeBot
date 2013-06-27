@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+# screw with RUBYLIB path so that we don't force
+# people into having to export the env var for our
+# libraries to load properly
+$:.unshift File.join( File.dirname($0) )
+
 require 'rubygems'
 require 'yaml'
 require 'lib/tykebot'
