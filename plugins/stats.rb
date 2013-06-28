@@ -1,4 +1,4 @@
-stats={}
+stats={:people=>{}}
 command do
   description "show stats for the bot"
 
@@ -33,15 +33,15 @@ command do
 
 end
 
-on :welcome do |bot,msg|
+on :welcome do |msg|
   update_person(msg.sender.nick,{})
 end
 
-on :leave do |bot,msg|
+on :leave do |msg|
   update_person(msg.sender.nick,{})
 end
 
-on :firehose do |bot,msg|
+on :firehose do |msg|
   update_person(msg.sender.nick,:talk=>true) if msg.room?
 end
   
@@ -53,7 +53,7 @@ end
 
 init do 
   # migrations
-  stats = load_data
+  stats = load_data||{}
   case stats[:version]
   when nil
     stats = {:commands => stats||{}, :people => {}, :version=>2}

@@ -25,7 +25,7 @@ command do
   end
 end
 
-on :firehose do |bot,msg|
+on :firehose do |msg|
   insult msg.sender.nick if !msg.sender.bot? and mock? msg.sender.nick
 end
 

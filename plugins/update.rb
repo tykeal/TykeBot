@@ -15,7 +15,7 @@ command do
 
 end
 
-on :firehose do |bot,message|
+on :firehose do |message|
   if message.body != nil
     if message.sender.jid == config.github_jid
       # log that that we got a message from github to help debug

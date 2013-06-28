@@ -50,7 +50,7 @@ command :wootoff do
   end
 end
 
-init do
+on :join do
   woot_watchers=load_data||[]
   (check = Proc.new {
     past_woot=last_woot.to_s.clone
