@@ -11,11 +11,11 @@ end
 
 started = false
 
-on :join do |bot|
+on :join do 
   timer(2) { started = true }
 end
 
-on :welcome do |bot,message|
+on :welcome do |message|
   if (started && rand(config.random) < 1)
     send(:text => fortune("Welcome %s! Here have a fortune:\n" % message.sender.nick))
   end

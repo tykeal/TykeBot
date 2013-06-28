@@ -333,11 +333,11 @@ Message-Id: <#{Time.now.to_i}#{rand}#{config.from}>
 end
 
 # Avoid the bot from generating pages on replay during startup
-on :join do |bot|
+on :join do
     timer(5) { started = true }
 end
 
-on :firehose do |bot,message|
+on :firehose do |message|
     if message.body? && started
         data.keys.each do |nick|
             if bot.room.roster[nick].nil?

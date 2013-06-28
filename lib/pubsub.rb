@@ -1,10 +1,9 @@
 class PubSub
 
-  def initialize(options={})
+  def initialize
     @queue = Queue.new
     @subscribers={}
     @befores={}
-    start_publisher if options[:start_publisher]
   end
 
   # publish an event
@@ -21,9 +20,8 @@ class PubSub
     (@befores[name]||=[]) << callback
   end
 
-  # publish thread
-  def start_publisher
-    @publisher_thread=Thread.new do
+  def start_publisher_thread
+    @publisher_thread||=Thread.new do
       loop do
         begin 
           name, params = @queue.pop # blocks

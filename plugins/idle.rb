@@ -10,14 +10,8 @@ command do
 end
 
 last_active = Time.now
-started = false
-
-on :join do |bot|
-  timer(2) { started = true }
-end
-
-on :firehose do |bot,message|
-  last_active = Time.now if started && !message.sender.bot? && message.room?
+on :firehose do |message|
+  last_active = Time.now if !message.sender.bot? && message.room?
 end
 
 class FakeMessage
@@ -38,12 +32,12 @@ helper :rand_cmd do |msg|
     msg ? msg.type : :groupchat,
     msg ? msg.sender.to_s : bot.config[:jid]
   )
-  publish(:command, bot, fake) 
+  publish(:command, fake) 
 end
 
 
 # setup idle timer
-init do
+on :join do
   last_sent = 0 
   (check = Proc.new { 
     if last_sent.to_i < last_active.to_i && Time.now-last_active >= config.timer_push
