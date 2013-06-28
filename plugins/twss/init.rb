@@ -4,7 +4,7 @@ require 'uri'
 twss = NaiveBayes.new(["she_said","she_didnt_say"])
 started = false
 
-on :join do |bot|
+on :join do
   timer(2) do 
     load_file("good.txt").each_line{|line|twss.train("she_said",line)}
     load_file("bad.txt").each_line{|line|twss.train("she_didnt_say",line)}
@@ -12,7 +12,7 @@ on :join do |bot|
   end
 end
 
-on :firehose do |bot,message|
+on :firehose do |message|
   if started && message.body != nil   
    if message.body.size>6 && !message.sender.bot?
     said=who_said_it(message.body)

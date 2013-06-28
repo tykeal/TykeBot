@@ -47,7 +47,7 @@ helper :display do |lines|
   }.join("\n<br/>")
 end
 
-on :firehose do |bot,message|
+on :firehose do |message|
   if message.body?
     URI.extract(message.body, ['http', 'https']).each do |url|
       open(file,"a"){|f| f.puts JSON.generate({

@@ -135,10 +135,10 @@ class TykeBot
       @plugins=[]
       @commands = []
       @inits=[]
-      @pubsub = PubSub.new(:start_publisher=>true)
+      @pubsub = PubSub.new
       @timer=CronTimer.new
 
-      on(:command) {|bot,message| dispatch_command(message)}
+      on(:command) {|message| dispatch_command(message)}
     end
 
     # used for room nick
@@ -203,6 +203,8 @@ class TykeBot
     # connect the bot, join the room, and join the pubsub thread
     # try to reconnect periodically if we become disconnected
     def run(check_connection_every_n_seconds=20)
+      init_plugins
+      @pubsub.start_publisher_thread
       loop do
         begin
           unless connected?
@@ -210,7 +212,6 @@ class TykeBot
             join if config[:room]
             # Beacon our presence on every successful connection
             presence(@config[:presence], @config[:status], @config[:priority])
-            init_plugins
           end
           logger.debug("joining pubsub thread...")
           @pubsub.join(check_connection_every_n_seconds)
@@ -236,7 +237,7 @@ class TykeBot
           jabber.stream.add_message_callback do |message|
             message = TykeMessage.new(self,message)
             # push private chats into the firehose as well (this may well break things)
-            publish(:firehose, self, message) unless message.delay?
+            publish(:firehose, message) unless message.delay?
             publish_command(message) if valid_command?(message)
           end
         end
@@ -293,7 +294,7 @@ class TykeBot
         @room.add_message_callback do |message|
           message = TykeMessage.new(self,message)
           # don't include past messages in firehose for now
-          publish(:firehose, self, message) unless message.delay?
+          publish(:firehose, message) unless message.delay?
           if valid_command?(message)
             begin
             message.body = strip_prefix(message.body)
@@ -306,14 +307,14 @@ class TykeBot
         end
 
         @room.add_join_callback do |message|
-          publish(:welcome, self, TykeMessage.new(self,message))
+          publish(:welcome, TykeMessage.new(self,message))
         end
 
         @room.add_leave_callback do |message|
-          publish(:leave, self, TykeMessage.new(self,message))
+          publish(:leave, TykeMessage.new(self,message))
         end
  
-        publish(:join, self)
+        publish(:join)
       end
     end
 
@@ -448,7 +449,7 @@ private
 
     def publish_command(message)
       logger.debug("COMMAND: #{message.body}")
-      publish :command, self, message if public? || message.sender.admin?
+      publish :command, message if public? || message.sender.admin?
     end
 
     def dispatch_command(message)

@@ -29,7 +29,7 @@ command do
 end
 
 # expand aliases before commands are processed
-before(:command) do |bot,message|
+before(:command) do |message|
   # don't process aliases if command starts with !
   if message.body.to_s =~ /^!/
     message.body = message.body.to_s[1..-1]
