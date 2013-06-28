@@ -3,6 +3,7 @@ require 'open-uri'
 config :limit, :default=>1024, :description=>'max links to return one-on-one'
 config :muc_limit, :default=>20, :description=>'max links to return from the room if MUC'
 config :date_format, :default=>'%Y-%d-%m %I:%M%p', :description=>'Date format string to use for links, see Time#strftime'
+config :sender_blacklist, :default=>['github-services@jabber.org'], :description=>'Dont record / lookup links for any jid in the blacklist'
 
 command do
   description 'show links from the room' 
@@ -48,7 +49,7 @@ helper :display do |lines|
 end
 
 on :firehose do |message|
-  if message.body?
+  if message.body? and !(message.sender.bot? or config.sender_blacklist.include?(message.sender.jid))
     URI.extract(message.body, ['http', 'https']).each do |url|
       open(file,"a"){|f| f.puts JSON.generate({
         :url=>url,
@@ -56,6 +57,6 @@ on :firehose do |message|
         :time=>Time.now.to_i
       })}
       open(url).read =~ /<title>(.*?)<\/title>/ && bot.send(:text => "Title for #{url} -- #{$1}") rescue nil
-    end unless message.sender.bot?
+    end 
   end
 end
