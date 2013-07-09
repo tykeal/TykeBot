@@ -2,11 +2,11 @@ stats={:people=>{}}
 command do
   description "show stats for the bot"
 
-  action :show, :default=>true do |message|
+  action :commands do |message|
     bot.commands(!message.sender.admin?).sort.map{|cmd| "%s=%d" % [cmd.name,stats[:commands][cmd.name]||0]}.join("\n")
   end
 
-  action :people do |message|
+  action :people, :optional => :filter, :default => true do |message, filter|
     # set everybody in the room currently as last seen now...
     bot.room.roster.keys.each {|nick| update_person(nick,:save=>false)}
     save_data(stats)
@@ -22,8 +22,8 @@ command do
         s[:count]||0,
         time_diff_in_natural_language(now,Time.at(s[:last]||0)) || "now",
         time_diff_in_natural_language(now,Time.at(s[:talk]||0)) || "now"
-      ]
-    end.join("\n")
+      ] if filter.nil? || p.match(Regexp.new filter, "i")
+    end.compact.join("\n")
   end
 
   action :clear do |message|
