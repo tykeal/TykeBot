@@ -50,13 +50,13 @@ end
 
 on :firehose do |message|
   if message.body? and !(message.sender.bot? or config.sender_blacklist.include?(message.sender.jid))
-    URI.extract(message.body, ['http', 'https']).each do |url|
+    URI.extract(message.body, ['http', 'https']).uniq.compact.each do |url|
       open(file,"a"){|f| f.puts JSON.generate({
         :url=>url,
         :from=>message.sender.display,
         :time=>Time.now.to_i
       })}
-      open(url).read =~ /<title>(.*?)<\/title>/ && bot.send(:text => "Title for #{url} -- #{$1}") rescue nil
+      http_get(url).body =~ /<title>(.*?)<\/title>/ && bot.send(:text => "Title for #{url} -- #{$1}") rescue nil
     end 
   end
 end

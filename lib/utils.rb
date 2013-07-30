@@ -103,8 +103,10 @@ def http_get(uri_str, options={})
 
   url = URI.parse(uri_str)
   http = Net::HTTP.new(url.host, url.port)
-  request = Net::HTTP::Get.new(url.path + (url.query ?  "?" + url.query : ''), {"User-Agent" => "curl"})
+  http.use_ssl = url.scheme == 'https'
+  request = Net::HTTP::Get.new((url.path.empty? ? '/' : url.path) + (url.query ?  "?" + url.query : ''), {"User-Agent" => "curl"})
   response = http.start {|http| http.request(request) }
+    
 
   case response
   when Net::HTTPSuccess     then response
