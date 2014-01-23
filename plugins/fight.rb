@@ -39,7 +39,7 @@ end
 
 helper :search do |q|
   # Use a custom User-Agent otherwise google makes it harder to get the results counts
-  doc = Nokogiri::HTML(open("http://www.google.com/search?q=#{CGI.escape(q)}", "User-Agent" => 'Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20100101 Firefox/8.0'))
+  doc = Nokogiri::HTML(open("https://www.google.com/search?q=#{CGI.escape(q)}", "User-Agent" => 'Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20100101 Firefox/8.0'))
   doc.xpath("//div[@id='resultStats']").text.match('[0-9,]+')[0]
 end
 
